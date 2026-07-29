@@ -1,10 +1,12 @@
 import performance01 from "../performances/performance-01/index.js";
 import elisa from "../performances/elisa/index.js";
+import fmcp from "../performances/fmcp/index.js";
 import { normalizePerformance } from "./Cue.js";
 
 export const performances = {
   "performance-01": normalizePerformance(performance01),
-  elisa: normalizePerformance(elisa)
+  elisa: normalizePerformance(elisa),
+  fmcp: normalizePerformance(fmcp)
 };
 
 const requestedPerformance = new URLSearchParams(window.location.search).get("performance");
