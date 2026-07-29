@@ -1,0 +1,125 @@
+---
+const title = "Reactive Archive — Monitor";
+---
+
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <main class="monitor">
+      <header>
+        <div>
+          <p class="eyebrow">PERFORMANCE MONITOR</p>
+          <h1 id="performance-title">Reactive Archive</h1>
+        </div>
+        <div id="connection" class="connection offline">IN ATTESA</div>
+      </header>
+
+      <section class="scene-grid">
+        <article class="panel current">
+          <p class="label">SCENA CORRENTE</p>
+          <p id="scene-count" class="count">— / —</p>
+          <h2 id="scene-title">Player non collegato</h2>
+          <p id="scene-type" class="type">—</p>
+        </article>
+
+        <article class="panel next">
+          <p class="label">PROSSIMA</p>
+          <h3 id="next-title">—</h3>
+          <p id="next-type" class="type">—</p>
+        </article>
+      </section>
+
+      <section class="audio-grid">
+        <div class="meter" data-key="level"><span>AUDIO</span><b>0.000</b><i></i></div>
+        <div class="meter" data-key="bass"><span>BASS</span><b>0.000</b><i></i></div>
+        <div class="meter" data-key="mid"><span>MID</span><b>0.000</b><i></i></div>
+        <div class="meter" data-key="high"><span>HIGH</span><b>0.000</b><i></i></div>
+      </section>
+
+      <footer>
+        <span id="run-state">NON AVVIATA</span>
+        <span id="audio-mode">AUDIO: —</span>
+        <span id="clock">--:--:--</span>
+      </footer>
+    </main>
+
+    <script>
+      const channel = new BroadcastChannel("reactive-archive-monitor");
+      const connection = document.querySelector("#connection");
+      const title = document.querySelector("#performance-title");
+      const count = document.querySelector("#scene-count");
+      const sceneTitle = document.querySelector("#scene-title");
+      const sceneType = document.querySelector("#scene-type");
+      const nextTitle = document.querySelector("#next-title");
+      const nextType = document.querySelector("#next-type");
+      const runState = document.querySelector("#run-state");
+      const audioMode = document.querySelector("#audio-mode");
+      const clock = document.querySelector("#clock");
+      let lastMessage = 0;
+
+      function setMeter(key, value = 0) {
+        const meter = document.querySelector(`[data-key="${key}"]`);
+        if (!meter) return;
+        const normalized = Math.max(0, Math.min(1, Number(value) || 0));
+        meter.querySelector("b").textContent = normalized.toFixed(3);
+        meter.querySelector("i").style.transform = `scaleX(${normalized})`;
+      }
+
+      channel.addEventListener("message", (event) => {
+        const state = event.data;
+        if (state?.type !== "performance-state") return;
+        lastMessage = Date.now();
+        connection.textContent = "COLLEGATO";
+        connection.className = "connection online";
+        title.textContent = state.performance?.title ?? "Reactive Archive";
+        count.textContent = `${(state.scene?.index ?? 0) + 1} / ${state.scene?.total ?? "—"}`;
+        sceneTitle.textContent = state.scene?.title ?? "—";
+        sceneType.textContent = state.scene?.type ?? "—";
+        nextTitle.textContent = state.nextScene?.title ?? "—";
+        nextType.textContent = state.nextScene?.type ?? "—";
+        runState.textContent = state.started ? "IN ESECUZIONE" : "NON AVVIATA";
+        audioMode.textContent = `AUDIO: ${state.audioMode === "fake" ? "FAKE" : "MICROFONO"}`;
+        Object.entries(state.audio ?? {}).forEach(([key, value]) => setMeter(key, value));
+      });
+
+      channel.postMessage({ type: "request-state" });
+      setInterval(() => {
+        clock.textContent = new Date().toLocaleTimeString("it-IT");
+        if (lastMessage && Date.now() - lastMessage > 2000) {
+          connection.textContent = "SEGNALE PERSO";
+          connection.className = "connection offline";
+        }
+      }, 250);
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root { color-scheme: dark; font-family: "Courier New", monospace; background: #050505; color: #f4f4f4; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: #050505; }
+  .monitor { min-height: 100vh; padding: 28px; display: grid; grid-template-rows: auto 1fr auto auto; gap: 18px; }
+  header, footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+  .eyebrow, .label, footer, .type { letter-spacing: .12em; text-transform: uppercase; }
+  .eyebrow, .label, .type { margin: 0; opacity: .58; font-size: 13px; }
+  h1 { margin: 6px 0 0; font-size: clamp(22px, 3vw, 42px); }
+  .connection { padding: 10px 14px; border: 1px solid currentColor; font-weight: 700; }
+  .online { color: #7dff8b; }
+  .offline { color: #ff776d; }
+  .scene-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 18px; }
+  .panel { border: 1px solid #333; padding: clamp(22px, 4vw, 56px); display: flex; flex-direction: column; justify-content: center; background: #0b0b0b; }
+  .current h2 { margin: 16px 0; font-size: clamp(38px, 7vw, 100px); line-height: .95; overflow-wrap: anywhere; }
+  .next h3 { margin: 16px 0; font-size: clamp(24px, 4vw, 54px); line-height: 1; }
+  .count { margin: 14px 0 0; font-size: clamp(22px, 3vw, 42px); }
+  .audio-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .meter { position: relative; overflow: hidden; border: 1px solid #333; min-height: 100px; padding: 15px; display: flex; flex-direction: column; justify-content: space-between; background: #0b0b0b; }
+  .meter span, .meter b { position: relative; z-index: 1; }
+  .meter b { font-size: clamp(18px, 2.4vw, 34px); }
+  .meter i { position: absolute; inset: 0; background: #f4f4f4; opacity: .15; transform: scaleX(0); transform-origin: left; transition: transform 80ms linear; }
+  footer { font-size: 13px; opacity: .72; }
+  @media (max-width: 800px) { .scene-grid { grid-template-columns: 1fr; } .audio-grid { grid-template-columns: repeat(2, 1fr); } }
+</style>
