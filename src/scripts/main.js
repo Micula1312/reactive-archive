@@ -53,10 +53,23 @@ const sceneManager = new SceneManager({
   performance: performanceScore
 });
 
+let blackoutActive = false;
+function setBlackout(active) {
+  blackoutActive = active;
+  document.body.dataset.blackout = active ? "true" : "false";
+  canvas.style.visibility = active ? "hidden" : "visible";
+  video.style.visibility = active ? "hidden" : "visible";
+  document.querySelectorAll("[data-scene-layer]").forEach((element) => {
+    element.style.visibility = active ? "hidden" : "visible";
+  });
+  ui.setStatus(active ? "BLACKOUT" : `Scena ${sceneManager.currentIndex + 1}`);
+}
+
 const performanceMonitor = new PerformanceMonitor({
   performance: performanceScore,
   sceneManager,
-  audioManager
+  audioManager,
+  onBlackout: setBlackout
 });
 
 let audioReactiveEnabled = true;
@@ -72,7 +85,6 @@ animate();
 
 function updateAudio() {
   requestAnimationFrame(updateAudio);
-
   if (!started) return;
 
   const audioData = audioManager.update();
@@ -96,7 +108,7 @@ function updateAudio() {
   if (visualVisibility < 0.002) visualVisibility = 0;
   if (visualVisibility > 0.998) visualVisibility = 1;
 
-  canvas.style.opacity = String(visualVisibility);
+  if (!blackoutActive) canvas.style.opacity = String(visualVisibility);
   visualRenderer.setVisibility(visualVisibility);
 
   const reactiveAudio = shouldReact
@@ -112,7 +124,6 @@ updateAudio();
 
 async function startExperience() {
   if (started) return;
-
   ui.setStartButtonDisabled(true);
   ui.setStatus("Attivazione del microfono…");
 
@@ -136,11 +147,7 @@ async function startExperience() {
 function toggleAudioReactive() {
   audioReactiveEnabled = !audioReactiveEnabled;
   ui.setAudioReactiveState(audioReactiveEnabled);
-  ui.setStatus(
-    audioReactiveEnabled
-      ? "Audio reactivity attiva"
-      : "Audio reactivity disattivata"
-  );
+  ui.setStatus(audioReactiveEnabled ? "Audio reactivity attiva" : "Audio reactivity disattivata");
 }
 
 async function toggleMicrophoneMode() {
