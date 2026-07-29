@@ -52,54 +52,60 @@ void main() {
   if (uEffectMode < 0.5) {
     color = texture2D(uTexture, uv).rgb;
   } else if (uEffectMode < 1.5) {
-    float columnCount = mix(18.0, 70.0, clamp(high * uHighDetail, 0.0, 1.0));
-    float column = floor(uv.x * columnCount);
-    float timeCell = floor(uTime * (3.0 + high * 9.0));
-    float seed = random2d(vec2(column * 1.73, timeCell));
-    float rarityValue = clamp(intensity + high * 0.35, 0.0, 1.0);
-    float rarity = mix(0.94, 0.72, rarityValue);
-    float glitchMask = step(rarity, seed);
+    float coarseColumns = mix(7.0, 18.0, high);
+    float fineColumns = mix(24.0, 92.0, high * uHighDetail);
+    float coarseColumn = floor(uv.x * coarseColumns);
+    float fineColumn = floor(uv.x * fineColumns);
+    float rowCount = mix(8.0, 34.0, mid);
+    float row = floor(uv.y * rowCount);
+    float timeCell = floor(uTime * (3.0 + high * 11.0));
 
-    float widthNoise = random2d(vec2(column, 41.7));
-    float localX = fract(uv.x * columnCount);
-    float bandStart = smoothstep(0.02, 0.12, localX);
-    float bandEnd = 1.0 - smoothstep(0.78 + widthNoise * 0.16, 0.98, localX);
-    glitchMask *= bandStart * bandEnd;
+    float coarseSeed = random2d(vec2(coarseColumn * 2.17, timeCell));
+    float fineSeed = random2d(vec2(fineColumn + 17.0, timeCell * 1.31));
+    float rowSeed = random2d(vec2(row * 3.71, timeCell + fineColumn));
 
-    float direction = random2d(vec2(column, timeCell + 9.0)) - 0.5;
-    float verticalShift = direction * glitchMask * intensity;
-    verticalShift *= 0.035 + mid * uMidFlow * 0.24 + bass * uBassImpact * 0.08;
+    float coarseMask = step(mix(0.94, 0.68, intensity + bass * 0.25), coarseSeed);
+    float fineMask = step(mix(0.97, 0.76, intensity + high * 0.3), fineSeed);
+    float blockMask = step(mix(0.95, 0.72, intensity + mid * 0.25), rowSeed);
 
-    vec2 shiftedUv = vec2(uv.x, fract(uv.y + verticalShift));
-    float freezeCell = floor((uv.y + verticalShift) * mix(22.0, 90.0, clamp(high, 0.0, 1.0)));
-    float freezeSeed = random2d(vec2(column + freezeCell, timeCell * 0.37));
-    float freezeAmount = step(0.82, freezeSeed) * glitchMask;
-    float steppedY = floor(shiftedUv.y * 36.0) / 36.0;
-    shiftedUv.y = mix(shiftedUv.y, steppedY, freezeAmount * 0.28);
+    float localFineX = fract(uv.x * fineColumns);
+    float localRowY = fract(uv.y * rowCount);
+    float stripMask = smoothstep(0.03, 0.16, localFineX) * (1.0 - smoothstep(0.72, 0.98, localFineX));
+    float rowMask = smoothstep(0.02, 0.12, localRowY) * (1.0 - smoothstep(0.70, 0.98, localRowY));
+
+    float glitchMask = clamp(coarseMask * 0.8 + fineMask * stripMask + blockMask * rowMask, 0.0, 1.0);
+
+    float verticalDirection = random2d(vec2(fineColumn, timeCell + 9.0)) - 0.5;
+    float horizontalDirection = random2d(vec2(row + 5.0, timeCell * 0.73)) - 0.5;
+    float verticalShift = verticalDirection * glitchMask * intensity * (0.05 + mid * uMidFlow * 0.30 + bass * uBassImpact * 0.10);
+    float horizontalShift = horizontalDirection * blockMask * intensity * (0.015 + bass * uBassImpact * 0.08);
+
+    vec2 shiftedUv = uv + vec2(horizontalShift, verticalShift);
+    shiftedUv = fract(shiftedUv);
+
+    float freezeSeed = random2d(vec2(fineColumn + row, timeCell * 0.41));
+    float freezeMask = step(0.79, freezeSeed) * glitchMask;
+    float steppedY = floor(shiftedUv.y * mix(18.0, 64.0, high)) / mix(18.0, 64.0, high);
+    float steppedX = floor(shiftedUv.x * mix(24.0, 110.0, high)) / mix(24.0, 110.0, high);
+    shiftedUv = mix(shiftedUv, vec2(steppedX, steppedY), freezeMask * 0.42);
 
     color = texture2D(uTexture, shiftedUv).rgb;
 
-    float edgeDistance = min(localX, 1.0 - localX);
-    float seam = 1.0 - smoothstep(0.0, 0.025 + high * 0.018, edgeDistance);
-    color *= 1.0 - seam * glitchMask * (0.10 + intensity * 0.28);
+    float tear = step(0.86, random2d(vec2(row, timeCell * 1.91))) * blockMask;
+    color *= 1.0 - tear * (0.15 + intensity * 0.35);
+
+    float seamX = 1.0 - smoothstep(0.0, 0.018 + high * 0.012, min(localFineX, 1.0 - localFineX));
+    float seamY = 1.0 - smoothstep(0.0, 0.025, min(localRowY, 1.0 - localRowY));
+    color *= 1.0 - (seamX * fineMask + seamY * blockMask) * (0.06 + intensity * 0.22);
   } else if (uEffectMode < 2.5) {
-    float breath = sin(uTime * 0.28 + uv.y * 3.0) * 0.5 + 0.5;
-    float flow = sin(uv.y * 4.5 + uTime * (0.18 + mid * 0.55));
-    flow *= mid * uMidFlow * intensity * 0.022;
-    float pulse = sin(length(uv - vec2(0.5)) * 10.0 - uTime * 0.55);
-    pulse *= bass * uBassImpact * intensity * 0.012;
-
-    vec2 softUv = uv;
-    softUv.x += flow + pulse;
-    softUv.y += cos(softUv.x * 3.8 - uTime * 0.22) * mid * intensity * 0.010;
-
-    vec3 baseColor = texture2D(uTexture, softUv).rgb;
-    vec2 softRadius = getTexelSize() * (1.5 + intensity * 3.0);
-    vec3 softColor = blur9(softUv, softRadius);
-    float gradient = smoothstep(0.05, 0.95, softUv.y + sin(uTime * 0.14) * 0.12);
-    float softBlend = (0.08 + gradient * 0.18 + breath * 0.08) * intensity;
+    float breath = sin(uTime * 0.22) * 0.5 + 0.5;
+    vec3 baseColor = texture2D(uTexture, uv).rgb;
+    vec2 softRadius = getTexelSize() * (1.2 + intensity * 2.6 + audio * 1.8);
+    vec3 softColor = blur9(uv, softRadius);
+    float verticalTone = smoothstep(0.05, 0.95, uv.y);
+    float softBlend = (0.08 + verticalTone * 0.14 + breath * 0.05) * intensity;
     color = mix(baseColor, softColor, softBlend);
-    color *= 0.92 + breath * 0.08 + audio * 0.20;
+    color *= 0.94 + breath * 0.05 + audio * 0.16;
   } else {
     float focusWave = sin(uTime * (0.32 + mid * 0.8) + uv.y * 5.0) * 0.5 + 0.5;
     float radial = smoothstep(0.08, 0.72, distance(uv, vec2(0.5)));
