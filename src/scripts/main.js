@@ -1,7 +1,8 @@
 import Renderer from "./Renderer.js";
 import AudioManager from "./AudioManager.js";
 import { UIManager } from "./AppUi.js";
-import { playlist } from "./Playlist.js";
+import SceneManager from "./SceneManager.js";
+import { performance as performanceScore } from "./Performance.js";
 
 /* =========================================================
    ELEMENTI HTML
@@ -85,20 +86,20 @@ const ui =
     highValue
   });
 
+const sceneManager =
+  new SceneManager({
+    video,
+    renderer: visualRenderer,
+    ui,
+    performance: performanceScore
+  });
+
 /* =========================================================
    STATO
    ========================================================= */
 
-let currentVideoIndex = 0;
 let audioReactiveEnabled = true;
 let started = false;
-
-const SILENCE_THRESHOLD = 0.035;
-const SILENCE_DELAY = 350;
-
-const FADE_IN_SPEED = 0.12;
-const FADE_OUT_SPEED = 0.025;
-
 let visualVisibility = 0;
 let lastSoundTime = performance.now();
 
@@ -108,7 +109,6 @@ let lastSoundTime = performance.now();
 
 function animate() {
   requestAnimationFrame(animate);
-
   visualRenderer.render();
 }
 
@@ -125,32 +125,39 @@ function updateAudio() {
     return;
   }
 
-  const audioData =
-    audioManager.update();
+  const audioData = audioManager.update();
+  const scene = sceneManager.currentScene;
+  const now = performance.now();
 
-  const now =
-    performance.now();
+  const sceneAudioReactive =
+    scene.audioReactive ?? true;
 
-  if (!audioReactiveEnabled) {
+  const shouldReact =
+    audioReactiveEnabled && sceneAudioReactive;
+
+  const silenceThreshold =
+    scene.silenceThreshold ?? 0.035;
+
+  const silenceDelay =
+    scene.silenceDelay ?? 350;
+
+  const fadeInSpeed =
+    scene.fadeInSpeed ?? 0.12;
+
+  const fadeOutSpeed =
+    scene.fadeOutSpeed ?? 0.025;
+
+  if (!shouldReact) {
     visualVisibility +=
-      (1 - visualVisibility) *
-      FADE_IN_SPEED;
-  } else if (
-    audioData.level >
-    SILENCE_THRESHOLD
-  ) {
+      (1 - visualVisibility) * fadeInSpeed;
+  } else if (audioData.level > silenceThreshold) {
     lastSoundTime = now;
 
     visualVisibility +=
-      (1 - visualVisibility) *
-      FADE_IN_SPEED;
-  } else if (
-    now - lastSoundTime >
-    SILENCE_DELAY
-  ) {
+      (1 - visualVisibility) * fadeInSpeed;
+  } else if (now - lastSoundTime > silenceDelay) {
     visualVisibility +=
-      (0 - visualVisibility) *
-      FADE_OUT_SPEED;
+      (0 - visualVisibility) * fadeOutSpeed;
   }
 
   if (visualVisibility < 0.002) {
@@ -161,17 +168,14 @@ function updateAudio() {
     visualVisibility = 1;
   }
 
-  canvas.style.opacity =
-    String(visualVisibility);
+  canvas.style.opacity = String(visualVisibility);
 
   visualRenderer.setVisibility(
     visualVisibility
   );
 
-  if (audioReactiveEnabled) {
-    visualRenderer.setAudioData(
-      audioData
-    );
+  if (shouldReact) {
+    visualRenderer.setAudioData(audioData);
   } else {
     visualRenderer.setAudioData({
       level: 0,
@@ -181,9 +185,7 @@ function updateAudio() {
     });
   }
 
-  ui.updateAudioValues(
-    audioData
-  );
+  ui.updateAudioValues(audioData);
 }
 
 updateAudio();
@@ -198,22 +200,19 @@ async function startExperience() {
   }
 
   ui.setStartButtonDisabled(true);
-  ui.setStatus(
-    "Attivazione del microfono…"
-  );
+  ui.setStatus("Attivazione del microfono…");
 
   try {
     await audioManager.start();
 
-    ui.setStatus(
-      "Avvio del video…"
-    );
+    ui.setStatus("Avvio della performance…");
 
     started = true;
+    sceneManager.setStarted(true);
     lastSoundTime = performance.now();
 
-    await loadVideo(
-      currentVideoIndex
+    await sceneManager.load(
+      sceneManager.currentIndex
     );
 
     ui.hideStartScreen();
@@ -231,84 +230,6 @@ async function startExperience() {
     );
 
     ui.setStartButtonDisabled(false);
-  }
-}
-
-/* =========================================================
-   PLAYLIST
-   ========================================================= */
-
-async function loadVideo(index) {
-  if (playlist.length === 0) {
-    ui.setStatus(
-      "La playlist è vuota."
-    );
-
-    return;
-  }
-
-  currentVideoIndex =
-    (index + playlist.length) %
-    playlist.length;
-
-  const selectedVideo =
-    playlist[currentVideoIndex];
-
-  video.pause();
-
-  video.src =
-    selectedVideo.src;
-
-  video.load();
-
-  ui.setStatus(
-    `${currentVideoIndex + 1} / ${playlist.length} — ${selectedVideo.title}`
-  );
-
-  if (!started) {
-    return;
-  }
-
-  try {
-    await video.play();
-  } catch (error) {
-    console.error(
-      "Impossibile riprodurre il video:",
-      error
-    );
-  }
-}
-
-function loadNextVideo() {
-  loadVideo(
-    currentVideoIndex + 1
-  );
-}
-
-function loadPreviousVideo() {
-  loadVideo(
-    currentVideoIndex - 1
-  );
-}
-
-function selectVideo(index) {
-  if (
-    index < 0 ||
-    index >= playlist.length
-  ) {
-    return;
-  }
-
-  loadVideo(index);
-}
-
-function restartVideo() {
-  video.currentTime = 0;
-
-  if (started) {
-    video
-      .play()
-      .catch(console.error);
   }
 }
 
@@ -344,9 +265,7 @@ async function toggleMicrophoneMode() {
 
       await audioManager.start();
 
-      ui.setStatus(
-        "Microfono attivo"
-      );
+      ui.setStatus("Microfono attivo");
     } else {
       audioManager.enableFakeMode();
 
@@ -369,33 +288,13 @@ async function toggleMicrophoneMode() {
    COLLEGAMENTO UI
    ========================================================= */
 
-ui.onStart(
-  startExperience
-);
-
-ui.onNextVideo(
-  loadNextVideo
-);
-
-ui.onPreviousVideo(
-  loadPreviousVideo
-);
-
-ui.onSelectVideo(
-  selectVideo
-);
-
-ui.onToggleAudioReactive(
-  toggleAudioReactive
-);
-
-ui.onToggleMicrophoneMode(
-  toggleMicrophoneMode
-);
-
-ui.onRestartVideo(
-  restartVideo
-);
+ui.onStart(startExperience);
+ui.onNextVideo(() => sceneManager.next());
+ui.onPreviousVideo(() => sceneManager.previous());
+ui.onSelectVideo((index) => sceneManager.select(index));
+ui.onToggleAudioReactive(toggleAudioReactive);
+ui.onToggleMicrophoneMode(toggleMicrophoneMode);
+ui.onRestartVideo(() => sceneManager.restart());
 
 ui.setAudioReactiveState(
   audioReactiveEnabled
