@@ -43,7 +43,8 @@ export default class Renderer {
     this.geometry = new THREE.PlaneGeometry(2, 2);
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
-    this.clock = new THREE.Clock();
+
+    this.startTime = performance.now();
     this.resize = this.resize.bind(this);
     window.addEventListener("resize", this.resize);
     this.resize();
@@ -84,7 +85,7 @@ export default class Renderer {
   }
 
   render() {
-    this.uniforms.uTime.value = this.clock.getElapsedTime();
+    this.uniforms.uTime.value = (performance.now() - this.startTime) / 1000;
     this.renderer.render(this.scene, this.camera);
   }
 
