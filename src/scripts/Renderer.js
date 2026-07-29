@@ -68,13 +68,24 @@ export default class Renderer {
     this.resize();
   }
 
-  setAudioData({ audio = 0, bass = 0, mid = 0, high = 0 } = {}) {
-    this.uniforms.uAudio.value = this.clamp01(audio);
-    this.uniforms.uBass.value = this.clamp01(bass);
-    this.uniforms.uMid.value = this.clamp01(mid);
-    this.uniforms.uHigh.value = this.clamp01(high);
-  }
+setAudioData({
+  level = 0,
+  bass = 0,
+  mid = 0,
+  high = 0
+} = {}) {
+  this.uniforms.uAudio.value =
+    this.clamp01(level);
 
+  this.uniforms.uBass.value =
+    this.clamp01(bass);
+
+  this.uniforms.uMid.value =
+    this.clamp01(mid);
+
+  this.uniforms.uHigh.value =
+    this.clamp01(high);
+}
   setReactivity(value) {
     this.uniforms.uReactivity.value = this.clamp01(value);
   }

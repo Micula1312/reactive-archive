@@ -1,181 +1,156 @@
 import Renderer from "./Renderer.js";
 import AudioManager from "./AudioManager.js";
+import { UIManager } from "./AppUi.js";
+import { playlist } from "./Playlist.js";
 
-const canvas = document.querySelector("#visual-canvas");
-const video = document.querySelector("#source-video");
-const startScreen = document.querySelector("#start-screen");
-const startButton = document.querySelector("#start-button");
-const status = document.querySelector("#status");
-const debugPanel = document.querySelector("#debug-panel");
+/* =========================================================
+   ELEMENTI HTML
+   ========================================================= */
 
-const audioValue = document.querySelector("#audio-value");
-const bassValue = document.querySelector("#bass-value");
-const midValue = document.querySelector("#mid-value");
-const highValue = document.querySelector("#high-value");
+const canvas =
+  document.querySelector("#visual-canvas");
 
-if (!(canvas instanceof HTMLCanvasElement)) {
-  throw new Error("Canvas #visual-canvas non trovato.");
+const video =
+  document.querySelector("#source-video");
+
+const startScreen =
+  document.querySelector("#start-screen");
+
+const startButton =
+  document.querySelector("#start-button");
+
+const status =
+  document.querySelector("#status");
+
+const debugPanel =
+  document.querySelector("#debug-panel");
+
+const audioValue =
+  document.querySelector("#audio-value");
+
+const bassValue =
+  document.querySelector("#bass-value");
+
+const midValue =
+  document.querySelector("#mid-value");
+
+const highValue =
+  document.querySelector("#high-value");
+
+/* =========================================================
+   VALIDAZIONE HTML
+   ========================================================= */
+
+if (
+  !(canvas instanceof HTMLCanvasElement) ||
+  !(video instanceof HTMLVideoElement) ||
+  !(startScreen instanceof HTMLElement) ||
+  !(startButton instanceof HTMLButtonElement) ||
+  !(status instanceof HTMLElement) ||
+  !(debugPanel instanceof HTMLElement) ||
+  !(audioValue instanceof HTMLElement) ||
+  !(bassValue instanceof HTMLElement) ||
+  !(midValue instanceof HTMLElement) ||
+  !(highValue instanceof HTMLElement)
+) {
+  throw new Error(
+    "Mancano alcuni elementi necessari nella pagina."
+  );
 }
 
-if (!(video instanceof HTMLVideoElement)) {
-  throw new Error("Video #source-video non trovato.");
-}
+/* =========================================================
+   MODULI
+   ========================================================= */
 
-if (!(startButton instanceof HTMLButtonElement)) {
-  throw new Error("Pulsante #start-button non trovato.");
-}
+const visualRenderer =
+  new Renderer({
+    canvas,
+    video
+  });
 
-const renderer = new Renderer({
-  canvas,
-  video,
-});
+const audioManager =
+  new AudioManager();
 
-const audioManager = new AudioManager();
+const ui =
+  new UIManager({
+    canvas,
+    video,
+    startScreen,
+    startButton,
+    status,
+    debugPanel,
+    audioValue,
+    bassValue,
+    midValue,
+    highValue
+  });
 
-/*
- * REGOLAZIONE SILENZIO / FADE
- *
- * SILENCE_THRESHOLD:
- * sotto questo livello il segnale viene considerato silenzio.
- *
- * SILENCE_DELAY:
- * millisecondi di attesa prima di iniziare lo spegnimento.
- *
- * FADE_IN_SPEED:
- * velocità con cui l'immagine torna visibile.
- *
- * FADE_OUT_SPEED:
- * velocità con cui l'immagine sfuma al nero.
- */
+/* =========================================================
+   STATO
+   ========================================================= */
+
+let currentVideoIndex = 0;
+let audioReactiveEnabled = true;
+let started = false;
+
 const SILENCE_THRESHOLD = 0.035;
 const SILENCE_DELAY = 350;
+
 const FADE_IN_SPEED = 0.12;
 const FADE_OUT_SPEED = 0.025;
-
-let started = false;
-let audioReactiveEnabled = true;
-let blackoutEnabled = false;
 
 let visualVisibility = 0;
 let lastSoundTime = performance.now();
 
-function clamp01(value) {
-  const number = Number(value);
+/* =========================================================
+   LOOP GRAFICO
+   ========================================================= */
 
-  if (!Number.isFinite(number)) {
-    return 0;
-  }
+function animate() {
+  requestAnimationFrame(animate);
 
-  return Math.max(0, Math.min(1, number));
+  visualRenderer.render();
 }
 
-function normalizeAudioData(data) {
-  if (!data || typeof data !== "object") {
-    return {
-      audio: 0,
-      bass: 0,
-      mid: 0,
-      high: 0,
-    };
-  }
+animate();
 
-  return {
-    audio: clamp01(
-      data.audio ??
-      data.level ??
-      data.volume ??
-      data.overall ??
-      0
-    ),
+/* =========================================================
+   AUDIO E VISIBILITÀ
+   ========================================================= */
 
-    bass: clamp01(
-      data.bass ??
-      data.low ??
-      0
-    ),
+function updateAudio() {
+  requestAnimationFrame(updateAudio);
 
-    mid: clamp01(
-      data.mid ??
-      data.middle ??
-      0
-    ),
-
-    high: clamp01(
-      data.high ??
-      data.treble ??
-      0
-    ),
-  };
-}
-
-/*
- * Compatibilità con differenti versioni di AudioManager.
- * Usa il primo metodo disponibile.
- */
-function readAudioData() {
-  let data = null;
-
-  if (typeof audioManager.update === "function") {
-    data = audioManager.update();
-  }
-
-  if (!data && typeof audioManager.getAudioData === "function") {
-    data = audioManager.getAudioData();
-  }
-
-  if (!data && typeof audioManager.getLevels === "function") {
-    data = audioManager.getLevels();
-  }
-
-  if (!data && audioManager.levels) {
-    data = audioManager.levels;
-  }
-
-  return normalizeAudioData(data);
-}
-
-async function startAudio() {
-  if (typeof audioManager.start === "function") {
-    await audioManager.start();
+  if (!started) {
     return;
   }
 
-  if (typeof audioManager.init === "function") {
-    await audioManager.init();
-    return;
-  }
+  const audioData =
+    audioManager.update();
 
-  if (typeof audioManager.enableMicrophone === "function") {
-    await audioManager.enableMicrophone();
-  }
-}
-
-function updateVisibility(audio) {
-  const now = performance.now();
+  const now =
+    performance.now();
 
   if (!audioReactiveEnabled) {
     visualVisibility +=
       (1 - visualVisibility) *
       FADE_IN_SPEED;
-
-    return;
-  }
-
-  if (audio > SILENCE_THRESHOLD) {
+  } else if (
+    audioData.level >
+    SILENCE_THRESHOLD
+  ) {
     lastSoundTime = now;
 
     visualVisibility +=
       (1 - visualVisibility) *
       FADE_IN_SPEED;
-  } else {
-    const silenceDuration =
-      now - lastSoundTime;
-
-    if (silenceDuration > SILENCE_DELAY) {
-      visualVisibility +=
-        (0 - visualVisibility) *
-        FADE_OUT_SPEED;
-    }
+  } else if (
+    now - lastSoundTime >
+    SILENCE_DELAY
+  ) {
+    visualVisibility +=
+      (0 - visualVisibility) *
+      FADE_OUT_SPEED;
   }
 
   if (visualVisibility < 0.002) {
@@ -185,183 +160,243 @@ function updateVisibility(audio) {
   if (visualVisibility > 0.998) {
     visualVisibility = 1;
   }
-}
 
-function updateDebug(data) {
-  if (audioValue) {
-    audioValue.textContent = data.audio.toFixed(3);
-  }
+  canvas.style.opacity =
+    String(visualVisibility);
 
-  if (bassValue) {
-    bassValue.textContent = data.bass.toFixed(3);
-  }
-
-  if (midValue) {
-    midValue.textContent = data.mid.toFixed(3);
-  }
-
-  if (highValue) {
-    highValue.textContent = data.high.toFixed(3);
-  }
-}
-
-function animate() {
-  window.requestAnimationFrame(animate);
-
-  const audioData = started
-    ? readAudioData()
-    : {
-        audio: 0,
-        bass: 0,
-        mid: 0,
-        high: 0,
-      };
-
-  updateVisibility(audioData.audio);
-  updateDebug(audioData);
-
-  renderer.setAudioData(
-    audioReactiveEnabled
-      ? audioData
-      : {
-          audio: 0,
-          bass: 0,
-          mid: 0,
-          high: 0,
-        }
+  visualRenderer.setVisibility(
+    visualVisibility
   );
 
-  renderer.setReactivity(
-    audioReactiveEnabled
-      ? 1
-      : 0
-  );
+  if (audioReactiveEnabled) {
+    visualRenderer.setAudioData(
+      audioData
+    );
+  } else {
+    visualRenderer.setAudioData({
+      level: 0,
+      bass: 0,
+      mid: 0,
+      high: 0
+    });
+  }
 
-  renderer.setVisibility(
-    blackoutEnabled
-      ? 0
-      : visualVisibility
+  ui.updateAudioValues(
+    audioData
   );
-
-  renderer.render();
 }
+
+updateAudio();
+
+/* =========================================================
+   AVVIO ESPERIENZA
+   ========================================================= */
 
 async function startExperience() {
   if (started) {
     return;
   }
 
-  startButton.disabled = true;
-
-  if (status) {
-    status.textContent =
-      "Avvio del video e del segnale audio…";
-  }
+  ui.setStartButtonDisabled(true);
+  ui.setStatus(
+    "Attivazione del microfono…"
+  );
 
   try {
-    video.muted = true;
-    video.loop = true;
+    await audioManager.start();
 
-    await video.play();
-
-    try {
-      await startAudio();
-
-      if (status) {
-        status.textContent =
-          "Microfono attivo.";
-      }
-    } catch (audioError) {
-      console.warn(
-        "Microfono non disponibile:",
-        audioError
-      );
-
-      if (status) {
-        status.textContent =
-          "Video avviato. Microfono non disponibile: resta attiva l’eventuale modalità fake.";
-      }
-    }
+    ui.setStatus(
+      "Avvio del video…"
+    );
 
     started = true;
     lastSoundTime = performance.now();
 
-    if (startScreen) {
-      startScreen.hidden = true;
-    }
-  } catch (error) {
-    console.error(
-      "Errore durante l’avvio:",
-      error
+    await loadVideo(
+      currentVideoIndex
     );
 
-    startButton.disabled = false;
+    ui.hideStartScreen();
 
-    if (status) {
-      status.textContent =
-        "Impossibile avviare il video. Controlla la console.";
-    }
+    document.documentElement
+      .requestFullscreen()
+      .catch(() => {});
+  } catch (error) {
+    console.error(error);
+
+    ui.setStatus(
+      error instanceof Error
+        ? error.message
+        : "Errore durante l'avvio."
+    );
+
+    ui.setStartButtonDisabled(false);
   }
 }
 
-startButton.addEventListener(
-  "click",
+/* =========================================================
+   PLAYLIST
+   ========================================================= */
+
+async function loadVideo(index) {
+  if (playlist.length === 0) {
+    ui.setStatus(
+      "La playlist è vuota."
+    );
+
+    return;
+  }
+
+  currentVideoIndex =
+    (index + playlist.length) %
+    playlist.length;
+
+  const selectedVideo =
+    playlist[currentVideoIndex];
+
+  video.pause();
+
+  video.src =
+    selectedVideo.src;
+
+  video.load();
+
+  ui.setStatus(
+    `${currentVideoIndex + 1} / ${playlist.length} — ${selectedVideo.title}`
+  );
+
+  if (!started) {
+    return;
+  }
+
+  try {
+    await video.play();
+  } catch (error) {
+    console.error(
+      "Impossibile riprodurre il video:",
+      error
+    );
+  }
+}
+
+function loadNextVideo() {
+  loadVideo(
+    currentVideoIndex + 1
+  );
+}
+
+function loadPreviousVideo() {
+  loadVideo(
+    currentVideoIndex - 1
+  );
+}
+
+function selectVideo(index) {
+  if (
+    index < 0 ||
+    index >= playlist.length
+  ) {
+    return;
+  }
+
+  loadVideo(index);
+}
+
+function restartVideo() {
+  video.currentTime = 0;
+
+  if (started) {
+    video
+      .play()
+      .catch(console.error);
+  }
+}
+
+/* =========================================================
+   AUDIO REACTIVE
+   ========================================================= */
+
+function toggleAudioReactive() {
+  audioReactiveEnabled =
+    !audioReactiveEnabled;
+
+  ui.setAudioReactiveState(
+    audioReactiveEnabled
+  );
+
+  ui.setStatus(
+    audioReactiveEnabled
+      ? "Audio reactivity attiva"
+      : "Audio reactivity disattivata"
+  );
+}
+
+/* =========================================================
+   MICROFONO / FAKE MODE
+   ========================================================= */
+
+async function toggleMicrophoneMode() {
+  try {
+    if (audioManager.fakeMode) {
+      ui.setStatus(
+        "Attivazione del microfono…"
+      );
+
+      await audioManager.start();
+
+      ui.setStatus(
+        "Microfono attivo"
+      );
+    } else {
+      audioManager.enableFakeMode();
+
+      ui.setStatus(
+        "Fake audio mode attivo"
+      );
+    }
+  } catch (error) {
+    console.error(error);
+
+    ui.setStatus(
+      error instanceof Error
+        ? error.message
+        : "Errore audio."
+    );
+  }
+}
+
+/* =========================================================
+   COLLEGAMENTO UI
+   ========================================================= */
+
+ui.onStart(
   startExperience
 );
 
-window.addEventListener(
-  "keydown",
-  async (event) => {
-    const key = event.key.toLowerCase();
-
-    if (key === "h" && debugPanel) {
-      debugPanel.hidden =
-        !debugPanel.hidden;
-    }
-
-    if (key === "a") {
-      audioReactiveEnabled =
-        !audioReactiveEnabled;
-
-      /*
-       * Quando disattivi la reattività,
-       * l'immagine torna dolcemente piena.
-       */
-      if (!audioReactiveEnabled) {
-        lastSoundTime = performance.now();
-      }
-
-      console.log(
-        `Audio reactive: ${
-          audioReactiveEnabled
-            ? "ON"
-            : "OFF"
-        }`
-      );
-    }
-
-    if (key === "b") {
-      blackoutEnabled =
-        !blackoutEnabled;
-
-      canvas.classList.toggle(
-        "blackout",
-        blackoutEnabled
-      );
-    }
-
-    if (key === "m") {
-      if (typeof audioManager.toggleMode === "function") {
-        await audioManager.toggleMode();
-      } else if (typeof audioManager.toggleFakeMode === "function") {
-        audioManager.toggleFakeMode();
-      } else {
-        console.warn(
-          "AudioManager non espone toggleMode() o toggleFakeMode()."
-        );
-      }
-    }
-  }
+ui.onNextVideo(
+  loadNextVideo
 );
 
-animate();
+ui.onPreviousVideo(
+  loadPreviousVideo
+);
+
+ui.onSelectVideo(
+  selectVideo
+);
+
+ui.onToggleAudioReactive(
+  toggleAudioReactive
+);
+
+ui.onToggleMicrophoneMode(
+  toggleMicrophoneMode
+);
+
+ui.onRestartVideo(
+  restartVideo
+);
+
+ui.setAudioReactiveState(
+  audioReactiveEnabled
+);
