@@ -51,11 +51,11 @@ const fmcp = {
       loop: true,
       advance: "manual",
       filter: {
-        preset: "soft-gradient",
-        intensity: 0.62,
-        bassImpact: 0.32,
-        midFlow: 0.86,
-        highDetail: 0.16
+        preset: "defocus",
+        intensity: 0.46,
+        bassImpact: 0.28,
+        midFlow: 0.72,
+        highDetail: 0.18
       }
     },
 
@@ -86,10 +86,10 @@ const fmcp = {
       advance: "manual",
       filter: {
         preset: "glitch",
-        intensity: 0.72,
-        bassImpact: 0.9,
-        midFlow: 0.34,
-        highDetail: 0.78
+        intensity: 0.78,
+        bassImpact: 0.92,
+        midFlow: 0.5,
+        highDetail: 0.84
       }
     },
 
@@ -102,11 +102,11 @@ const fmcp = {
       loop: true,
       advance: "manual",
       filter: {
-        preset: "glitch",
-        intensity: 0.84,
-        bassImpact: 0.94,
-        midFlow: 0.3,
-        highDetail: 0.88
+        preset: "defocus",
+        intensity: 0.78,
+        bassImpact: 0.72,
+        midFlow: 0.58,
+        highDetail: 0.26
       }
     },
 
@@ -120,10 +120,10 @@ const fmcp = {
       advance: "manual",
       filter: {
         preset: "soft-gradient",
-        intensity: 0.74,
-        bassImpact: 0.48,
-        midFlow: 0.92,
-        highDetail: 0.2
+        intensity: 0.66,
+        bassImpact: 0.4,
+        midFlow: 0.5,
+        highDetail: 0.18
       }
     },
 
@@ -137,10 +137,10 @@ const fmcp = {
       advance: "manual",
       filter: {
         preset: "soft-gradient",
-        intensity: 0.66,
-        bassImpact: 0.5,
-        midFlow: 0.78,
-        highDetail: 0.34
+        intensity: 0.58,
+        bassImpact: 0.42,
+        midFlow: 0.46,
+        highDetail: 0.28
       }
     }
   ],
