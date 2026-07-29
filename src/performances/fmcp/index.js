@@ -1,5 +1,6 @@
 const aiVideo = "https://thearchiveoftheuntamed.xyz/wp/wp-content/uploads/2026/07/Fmcp_Visuals_Ai.mp4";
 const asThePigVideo = "https://thearchiveoftheuntamed.xyz/wp/wp-content/uploads/2026/07/Fmcp-Visuals-As-The-Pig1.mp4";
+const introAudio = "/reactive-archive/fmcp/audio/FMCP - INTRODACQUA 8.30AM vDani 2.mp3";
 
 const placeholder = (id, title) => ({
   id,
@@ -25,7 +26,23 @@ const fmcp = {
   audioPolicy: "microphone-first",
 
   scenes: [
-    placeholder("fmcp-intro-acqua", "INTRODACQUA 8.30AM"),
+    {
+      id: "fmcp-intro-acqua",
+      title: "INTRODACQUA 8.30AM",
+      type: "video",
+      src: aiVideo,
+      audio: introAudio,
+      loop: true,
+      advance: "manual",
+      filter: {
+        preset: "soft-gradient",
+        intensity: 0.42,
+        bassImpact: 0.24,
+        midFlow: 0.36,
+        highDetail: 0.14
+      }
+    },
+
     placeholder("fmcp-montagna", "MONTAGNA"),
     placeholder("fmcp-omm", "OMM"),
 
