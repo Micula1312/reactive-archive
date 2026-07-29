@@ -1,0 +1,127 @@
+---
+---
+
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reactive Archive — Regia</title>
+    <style>
+      :root { font-family: Helvetica, Arial, sans-serif; color: #f5f5f5; background: #080808; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; background: #080808; }
+      button { font: inherit; }
+      .shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+      header { padding: 18px 22px; border-bottom: 1px solid #333; display: flex; gap: 18px; justify-content: space-between; align-items: center; }
+      h1 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: .04em; }
+      .status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+      .dot { width: 9px; height: 9px; border-radius: 50%; background: #a22; }
+      .dot.online { background: #3f6; }
+      main { min-height: 0; display: grid; grid-template-columns: minmax(300px, 42%) 1fr; }
+      .cue-list { overflow: auto; border-right: 1px solid #333; padding: 12px; }
+      .cue { width: 100%; color: inherit; background: transparent; border: 1px solid transparent; padding: 12px; display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; text-align: left; cursor: pointer; }
+      .cue:hover { border-color: #555; }
+      .cue.active { background: #f5f5f5; color: #080808; }
+      .cue-index, .cue-type { opacity: .55; font-size: 12px; text-transform: uppercase; }
+      .cue-title { font-size: 15px; }
+      .panel { padding: 24px; display: grid; align-content: start; gap: 22px; }
+      .eyebrow { font-size: 12px; opacity: .55; text-transform: uppercase; letter-spacing: .12em; }
+      .current { font-size: clamp(30px, 5vw, 72px); line-height: .98; font-weight: 500; margin-top: 6px; }
+      .next { font-size: 20px; opacity: .7; }
+      .meters { display: grid; gap: 9px; }
+      .meter { display: grid; grid-template-columns: 55px 1fr 48px; gap: 10px; align-items: center; font-size: 12px; }
+      .track { height: 8px; background: #222; overflow: hidden; }
+      .fill { height: 100%; width: 0%; background: #f5f5f5; transition: width .08s linear; }
+      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(5, minmax(90px, 1fr)); gap: 10px; }
+      footer button { min-height: 58px; border: 1px solid #555; background: #111; color: #fff; cursor: pointer; }
+      footer button:hover { background: #222; }
+      footer .go { background: #f5f5f5; color: #080808; font-weight: 700; }
+      footer .blackout.active { background: #a00; border-color: #f44; }
+      @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 42vh; border-right: 0; border-bottom: 1px solid #333; } footer { grid-template-columns: repeat(3, 1fr); } }
+    </style>
+  </head>
+  <body>
+    <div class="shell">
+      <header>
+        <div><div class="eyebrow">Live performance engine</div><h1 id="performance-title">REGIA</h1></div>
+        <div class="status"><span id="connection-dot" class="dot"></span><span id="connection-label">in attesa</span></div>
+      </header>
+      <main>
+        <section id="cue-list" class="cue-list"></section>
+        <section class="panel">
+          <div><div class="eyebrow">Ora in scena</div><div id="current-title" class="current">—</div></div>
+          <div><div class="eyebrow">Prossima cue</div><div id="next-title" class="next">—</div></div>
+          <div class="meters">
+            <div class="meter"><span>AUDIO</span><div class="track"><div id="level-fill" class="fill"></div></div><span id="level-value">0.00</span></div>
+            <div class="meter"><span>BASS</span><div class="track"><div id="bass-fill" class="fill"></div></div><span id="bass-value">0.00</span></div>
+            <div class="meter"><span>MID</span><div class="track"><div id="mid-fill" class="fill"></div></div><span id="mid-value">0.00</span></div>
+            <div class="meter"><span>HIGH</span><div class="track"><div id="high-fill" class="fill"></div></div><span id="high-value">0.00</span></div>
+          </div>
+        </section>
+      </main>
+      <footer>
+        <button data-command="previous">◀ PREV</button>
+        <button data-command="restart">↺ RESTART</button>
+        <button class="go" data-command="go">GO ▶</button>
+        <button data-command="next">NEXT ▶</button>
+        <button id="blackout-button" class="blackout">BLACKOUT</button>
+      </footer>
+    </div>
+    <script>
+      const channel = new BroadcastChannel("reactive-archive-monitor");
+      const cueList = document.querySelector("#cue-list");
+      const title = document.querySelector("#performance-title");
+      const currentTitle = document.querySelector("#current-title");
+      const nextTitle = document.querySelector("#next-title");
+      const dot = document.querySelector("#connection-dot");
+      const connectionLabel = document.querySelector("#connection-label");
+      const blackoutButton = document.querySelector("#blackout-button");
+      let blackout = false;
+      let lastStateAt = 0;
+      let scenes = [];
+      const send = (command, extra = {}) => channel.postMessage({ type: "regia-command", command, ...extra });
+      function renderCues(activeIndex) {
+        cueList.innerHTML = "";
+        scenes.forEach((cue) => {
+          const button = document.createElement("button");
+          button.className = `cue${cue.index === activeIndex ? " active" : ""}`;
+          button.innerHTML = `<span class="cue-index">${String(cue.index + 1).padStart(2, "0")}</span><span class="cue-title">${cue.title}</span><span class="cue-type">${cue.dramaturgicalType || cue.type}</span>`;
+          button.addEventListener("click", () => send("select", { index: cue.index }));
+          cueList.append(button);
+          if (cue.index === activeIndex) button.scrollIntoView({ block: "nearest" });
+        });
+      }
+      function updateMeter(name, value) {
+        const safe = Math.max(0, Math.min(1, Number(value) || 0));
+        document.querySelector(`#${name}-fill`).style.width = `${safe * 100}%`;
+        document.querySelector(`#${name}-value`).textContent = safe.toFixed(2);
+      }
+      channel.addEventListener("message", (event) => {
+        const state = event.data;
+        if (state?.type !== "performance-state") return;
+        lastStateAt = Date.now();
+        dot.classList.add("online");
+        connectionLabel.textContent = state.started ? state.audioMode : "player pronto";
+        title.textContent = state.performance?.title || "REGIA";
+        currentTitle.textContent = state.scene?.title || "—";
+        nextTitle.textContent = state.nextScene?.title || "—";
+        scenes = state.performance?.scenes || scenes;
+        renderCues(state.scene?.index ?? -1);
+        updateMeter("level", state.audio?.level);
+        updateMeter("bass", state.audio?.bass);
+        updateMeter("mid", state.audio?.mid);
+        updateMeter("high", state.audio?.high);
+      });
+      document.querySelectorAll("[data-command]").forEach((button) => button.addEventListener("click", () => send(button.dataset.command)));
+      blackoutButton.addEventListener("click", () => { blackout = !blackout; blackoutButton.classList.toggle("active", blackout); send("blackout", { active: blackout }); });
+      document.addEventListener("keydown", (event) => {
+        if (event.code === "Space") { event.preventDefault(); send("go"); }
+        if (event.code === "ArrowRight") send("next");
+        if (event.code === "ArrowLeft") send("previous");
+        if (event.key.toLowerCase() === "b") blackoutButton.click();
+      });
+      setInterval(() => { if (Date.now() - lastStateAt > 1500) { dot.classList.remove("online"); connectionLabel.textContent = "disconnesso"; } }, 500);
+      channel.postMessage({ type: "request-state" });
+    </script>
+  </body>
+</html>
