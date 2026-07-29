@@ -58,7 +58,15 @@ export default class Renderer {
 
   setEffect(filter = {}) {
     const preset = typeof filter === "string" ? filter : filter.preset;
-    this.uniforms.uEffectMode.value = preset === "glitch" ? 1 : preset === "soft-gradient" ? 2 : 0;
+    const effectModes = {
+      none: 0,
+      glitch: 1,
+      "glitch-vertical": 1,
+      "soft-gradient": 2,
+      defocus: 3
+    };
+
+    this.uniforms.uEffectMode.value = effectModes[preset] ?? 0;
     this.uniforms.uEffectIntensity.value = this.clamp01(filter.intensity ?? 0.5);
     this.uniforms.uBassImpact.value = this.clamp01(filter.bassImpact ?? 0.5);
     this.uniforms.uMidFlow.value = this.clamp01(filter.midFlow ?? 0.5);
