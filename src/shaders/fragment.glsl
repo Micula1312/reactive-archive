@@ -58,22 +58,22 @@ void main() {
     float seed = random2d(vec2(column * 1.73, timeCell));
     float rarityValue = clamp(intensity + high * 0.35, 0.0, 1.0);
     float rarity = mix(0.94, 0.72, rarityValue);
-    float active = step(rarity, seed);
+    float glitchMask = step(rarity, seed);
 
     float widthNoise = random2d(vec2(column, 41.7));
     float localX = fract(uv.x * columnCount);
     float bandStart = smoothstep(0.02, 0.12, localX);
     float bandEnd = 1.0 - smoothstep(0.78 + widthNoise * 0.16, 0.98, localX);
-    active *= bandStart * bandEnd;
+    glitchMask *= bandStart * bandEnd;
 
     float direction = random2d(vec2(column, timeCell + 9.0)) - 0.5;
-    float verticalShift = direction * active * intensity;
+    float verticalShift = direction * glitchMask * intensity;
     verticalShift *= 0.035 + mid * uMidFlow * 0.24 + bass * uBassImpact * 0.08;
 
     vec2 shiftedUv = vec2(uv.x, fract(uv.y + verticalShift));
     float freezeCell = floor((uv.y + verticalShift) * mix(22.0, 90.0, clamp(high, 0.0, 1.0)));
     float freezeSeed = random2d(vec2(column + freezeCell, timeCell * 0.37));
-    float freezeAmount = step(0.82, freezeSeed) * active;
+    float freezeAmount = step(0.82, freezeSeed) * glitchMask;
     float steppedY = floor(shiftedUv.y * 36.0) / 36.0;
     shiftedUv.y = mix(shiftedUv.y, steppedY, freezeAmount * 0.28);
 
@@ -81,7 +81,7 @@ void main() {
 
     float edgeDistance = min(localX, 1.0 - localX);
     float seam = 1.0 - smoothstep(0.0, 0.025 + high * 0.018, edgeDistance);
-    color *= 1.0 - seam * active * (0.10 + intensity * 0.28);
+    color *= 1.0 - seam * glitchMask * (0.10 + intensity * 0.28);
   } else if (uEffectMode < 2.5) {
     float breath = sin(uTime * 0.28 + uv.y * 3.0) * 0.5 + 0.5;
     float flow = sin(uv.y * 4.5 + uTime * (0.18 + mid * 0.55));
