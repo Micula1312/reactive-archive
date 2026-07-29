@@ -14,9 +14,14 @@
       .shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
       header { padding: 18px 22px; border-bottom: 1px solid #333; display: flex; gap: 18px; justify-content: space-between; align-items: center; }
       h1 { margin: 0; font-size: 18px; font-weight: 500; letter-spacing: .04em; }
-      .status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+      .header-status { display: flex; align-items: center; gap: 18px; }
+      .status, .recording-status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+      .recording-status { min-width: 118px; justify-content: flex-end; }
       .dot { width: 9px; height: 9px; border-radius: 50%; background: #a22; }
       .dot.online { background: #3f6; }
+      .record-dot { width: 9px; height: 9px; border-radius: 50%; background: #555; }
+      .recording .record-dot { background: #f22; animation: pulse 1s infinite; }
+      @keyframes pulse { 50% { opacity: .25; } }
       main { min-height: 0; display: grid; grid-template-columns: minmax(300px, 42%) 1fr; }
       .cue-list { overflow: auto; border-right: 1px solid #333; padding: 12px; }
       .cue { width: 100%; color: inherit; background: transparent; border: 1px solid transparent; padding: 12px; display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; text-align: left; cursor: pointer; }
@@ -32,19 +37,26 @@
       .meter { display: grid; grid-template-columns: 55px 1fr 48px; gap: 10px; align-items: center; font-size: 12px; }
       .track { height: 8px; background: #222; overflow: hidden; }
       .fill { height: 100%; width: 0%; background: #f5f5f5; transition: width .08s linear; }
-      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(5, minmax(90px, 1fr)); gap: 10px; }
+      .recording-note { border-top: 1px solid #333; padding-top: 16px; font-size: 12px; line-height: 1.5; color: #999; }
+      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)); gap: 10px; }
       footer button { min-height: 58px; border: 1px solid #555; background: #111; color: #fff; cursor: pointer; }
       footer button:hover { background: #222; }
+      footer button:disabled { opacity: .4; cursor: not-allowed; }
       footer .go { background: #f5f5f5; color: #080808; font-weight: 700; }
       footer .blackout.active { background: #a00; border-color: #f44; }
-      @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 42vh; border-right: 0; border-bottom: 1px solid #333; } footer { grid-template-columns: repeat(3, 1fr); } }
+      footer .record.active { background: #b00; border-color: #f44; }
+      @media (max-width: 900px) { footer { grid-template-columns: repeat(3, 1fr); } }
+      @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 42vh; border-right: 0; border-bottom: 1px solid #333; } .header-status { gap: 10px; } }
     </style>
   </head>
   <body>
     <div class="shell">
       <header>
         <div><div class="eyebrow">Live performance engine</div><h1 id="performance-title">REGIA</h1></div>
-        <div class="status"><span id="connection-dot" class="dot"></span><span id="connection-label">in attesa</span></div>
+        <div class="header-status">
+          <div id="recording-status" class="recording-status"><span class="record-dot"></span><span id="recording-label">REC pronto</span></div>
+          <div class="status"><span id="connection-dot" class="dot"></span><span id="connection-label">in attesa</span></div>
+        </div>
       </header>
       <main>
         <section id="cue-list" class="cue-list"></section>
@@ -57,6 +69,7 @@
             <div class="meter"><span>MID</span><div class="track"><div id="mid-fill" class="fill"></div></div><span id="mid-value">0.00</span></div>
             <div class="meter"><span>HIGH</span><div class="track"><div id="high-fill" class="fill"></div></div><span id="high-value">0.00</span></div>
           </div>
+          <div class="recording-note">REC registra la finestra o la scheda che selezioni nel pannello del browser. Per includere l’audio, condividi una scheda Chrome e attiva “Condividi audio scheda”. Il file viene scaricato in formato WebM quando premi STOP.</div>
         </section>
       </main>
       <footer>
@@ -65,6 +78,7 @@
         <button class="go" data-command="go">GO ▶</button>
         <button data-command="next">NEXT ▶</button>
         <button id="blackout-button" class="blackout">BLACKOUT</button>
+        <button id="record-button" class="record">● REC</button>
       </footer>
     </div>
     <script>
@@ -76,10 +90,22 @@
       const dot = document.querySelector("#connection-dot");
       const connectionLabel = document.querySelector("#connection-label");
       const blackoutButton = document.querySelector("#blackout-button");
+      const recordButton = document.querySelector("#record-button");
+      const recordingStatus = document.querySelector("#recording-status");
+      const recordingLabel = document.querySelector("#recording-label");
+
       let blackout = false;
       let lastStateAt = 0;
       let scenes = [];
+      let performanceName = "reactive-archive";
+      let recorder = null;
+      let captureStream = null;
+      let recordedChunks = [];
+      let recordingStartedAt = 0;
+      let recordingClock = null;
+
       const send = (command, extra = {}) => channel.postMessage({ type: "regia-command", command, ...extra });
+
       function renderCues(activeIndex) {
         cueList.innerHTML = "";
         scenes.forEach((cue) => {
@@ -91,18 +117,119 @@
           if (cue.index === activeIndex) button.scrollIntoView({ block: "nearest" });
         });
       }
+
       function updateMeter(name, value) {
         const safe = Math.max(0, Math.min(1, Number(value) || 0));
         document.querySelector(`#${name}-fill`).style.width = `${safe * 100}%`;
         document.querySelector(`#${name}-value`).textContent = safe.toFixed(2);
       }
+
+      function formatDuration(milliseconds) {
+        const totalSeconds = Math.floor(milliseconds / 1000);
+        const minutes = String(Math.floor(totalSeconds / 60)).padStart(2, "0");
+        const seconds = String(totalSeconds % 60).padStart(2, "0");
+        return `${minutes}:${seconds}`;
+      }
+
+      function safeFileName(value) {
+        return String(value || "reactive-archive")
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
+      }
+
+      function getSupportedMimeType() {
+        const candidates = [
+          "video/webm;codecs=vp9,opus",
+          "video/webm;codecs=vp8,opus",
+          "video/webm"
+        ];
+        return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || "";
+      }
+
+      function downloadRecording() {
+        if (!recordedChunks.length) return;
+        const mimeType = recorder?.mimeType || "video/webm";
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${safeFileName(performanceName)}-${timestamp}.webm`;
+        document.body.append(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        recordedChunks = [];
+      }
+
+      function resetRecordingUi(message = "REC pronto") {
+        clearInterval(recordingClock);
+        recordingClock = null;
+        recordButton.classList.remove("active");
+        recordButton.textContent = "● REC";
+        recordingStatus.classList.remove("recording");
+        recordingLabel.textContent = message;
+      }
+
+      function stopRecording() {
+        if (recorder && recorder.state !== "inactive") recorder.stop();
+        captureStream?.getTracks().forEach((track) => track.stop());
+      }
+
+      async function startRecording() {
+        if (!navigator.mediaDevices?.getDisplayMedia || typeof MediaRecorder === "undefined") {
+          recordingLabel.textContent = "Browser non supportato";
+          return;
+        }
+
+        try {
+          captureStream = await navigator.mediaDevices.getDisplayMedia({
+            video: { frameRate: { ideal: 60, max: 60 } },
+            audio: true
+          });
+
+          recordedChunks = [];
+          const mimeType = getSupportedMimeType();
+          recorder = new MediaRecorder(captureStream, mimeType ? { mimeType, videoBitsPerSecond: 12000000 } : { videoBitsPerSecond: 12000000 });
+
+          recorder.addEventListener("dataavailable", (event) => {
+            if (event.data.size > 0) recordedChunks.push(event.data);
+          });
+
+          recorder.addEventListener("stop", () => {
+            downloadRecording();
+            captureStream = null;
+            recorder = null;
+            resetRecordingUi("File salvato");
+          });
+
+          captureStream.getVideoTracks()[0]?.addEventListener("ended", stopRecording, { once: true });
+          recorder.start(1000);
+          recordingStartedAt = Date.now();
+          recordButton.classList.add("active");
+          recordButton.textContent = "■ STOP";
+          recordingStatus.classList.add("recording");
+          recordingLabel.textContent = "REC 00:00";
+          recordingClock = setInterval(() => {
+            recordingLabel.textContent = `REC ${formatDuration(Date.now() - recordingStartedAt)}`;
+          }, 250);
+        } catch (error) {
+          console.error(error);
+          resetRecordingUi(error?.name === "NotAllowedError" ? "Registrazione annullata" : "Errore registrazione");
+        }
+      }
+
       channel.addEventListener("message", (event) => {
         const state = event.data;
         if (state?.type !== "performance-state") return;
         lastStateAt = Date.now();
         dot.classList.add("online");
         connectionLabel.textContent = state.started ? state.audioMode : "player pronto";
-        title.textContent = state.performance?.title || "REGIA";
+        performanceName = state.performance?.title || "reactive-archive";
+        title.textContent = performanceName;
         currentTitle.textContent = state.scene?.title || "—";
         nextTitle.textContent = state.nextScene?.title || "—";
         scenes = state.performance?.scenes || scenes;
@@ -112,14 +239,20 @@
         updateMeter("mid", state.audio?.mid);
         updateMeter("high", state.audio?.high);
       });
+
       document.querySelectorAll("[data-command]").forEach((button) => button.addEventListener("click", () => send(button.dataset.command)));
       blackoutButton.addEventListener("click", () => { blackout = !blackout; blackoutButton.classList.toggle("active", blackout); send("blackout", { active: blackout }); });
+      recordButton.addEventListener("click", () => recorder?.state === "recording" ? stopRecording() : startRecording());
+
       document.addEventListener("keydown", (event) => {
         if (event.code === "Space") { event.preventDefault(); send("go"); }
         if (event.code === "ArrowRight") send("next");
         if (event.code === "ArrowLeft") send("previous");
         if (event.key.toLowerCase() === "b") blackoutButton.click();
+        if (event.key.toLowerCase() === "r" && !event.repeat) recordButton.click();
       });
+
+      window.addEventListener("beforeunload", () => captureStream?.getTracks().forEach((track) => track.stop()));
       setInterval(() => { if (Date.now() - lastStateAt > 1500) { dot.classList.remove("online"); connectionLabel.textContent = "disconnesso"; } }, 500);
       channel.postMessage({ type: "request-state" });
     </script>
