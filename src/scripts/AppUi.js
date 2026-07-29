@@ -1,4 +1,5 @@
 console.log("APP UI NUOVO CARICATO");
+
 export class UIManager {
   constructor({
     canvas,
@@ -23,6 +24,12 @@ export class UIManager {
     this.midValue = midValue;
     this.highValue = highValue;
 
+    this.touchStartX = 0;
+    this.touchStartY = 0;
+    this.touchStartTime = 0;
+    this.swipeThreshold = 55;
+    this.swipeMaxDuration = 700;
+
     this.callbacks = {
       start: null,
       nextVideo: null,
@@ -39,6 +46,12 @@ export class UIManager {
     this.handleStartClick =
       this.handleStartClick.bind(this);
 
+    this.handleTouchStart =
+      this.handleTouchStart.bind(this);
+
+    this.handleTouchEnd =
+      this.handleTouchEnd.bind(this);
+
     this.startButton.addEventListener(
       "click",
       this.handleStartClick
@@ -47,6 +60,18 @@ export class UIManager {
     window.addEventListener(
       "keydown",
       this.handleKeydown
+    );
+
+    this.canvas.addEventListener(
+      "touchstart",
+      this.handleTouchStart,
+      { passive: true }
+    );
+
+    this.canvas.addEventListener(
+      "touchend",
+      this.handleTouchEnd,
+      { passive: true }
     );
   }
 
@@ -86,6 +111,50 @@ export class UIManager {
     }
 
     await this.callbacks.start();
+  }
+
+  handleTouchStart(event) {
+    const touch = event.changedTouches[0];
+
+    if (!touch) {
+      return;
+    }
+
+    this.touchStartX = touch.clientX;
+    this.touchStartY = touch.clientY;
+    this.touchStartTime = performance.now();
+  }
+
+  handleTouchEnd(event) {
+    const touch = event.changedTouches[0];
+
+    if (!touch) {
+      return;
+    }
+
+    const deltaX = touch.clientX - this.touchStartX;
+    const deltaY = touch.clientY - this.touchStartY;
+    const duration = performance.now() - this.touchStartTime;
+
+    const isHorizontal =
+      Math.abs(deltaX) > Math.abs(deltaY) * 1.25;
+
+    const isLongEnough =
+      Math.abs(deltaX) >= this.swipeThreshold;
+
+    const isFastEnough =
+      duration <= this.swipeMaxDuration;
+
+    if (!isHorizontal || !isLongEnough || !isFastEnough) {
+      return;
+    }
+
+    if (deltaX > 0) {
+      this.callbacks.nextVideo?.();
+      return;
+    }
+
+    this.callbacks.previousVideo?.();
   }
 
   handleKeydown(event) {
@@ -231,6 +300,16 @@ export class UIManager {
     window.removeEventListener(
       "keydown",
       this.handleKeydown
+    );
+
+    this.canvas.removeEventListener(
+      "touchstart",
+      this.handleTouchStart
+    );
+
+    this.canvas.removeEventListener(
+      "touchend",
+      this.handleTouchEnd
     );
   }
 }
