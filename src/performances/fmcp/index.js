@@ -115,7 +115,7 @@ const fmcp = {
       title: "FORESTA",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_Foresta.mp4`,
-      audio: `${base}/audio/PRESET FMCP_FORESTA mix v3.mp3`,
+      audio: null,
       loop: true,
       advance: "manual",
       filter: {
@@ -132,7 +132,7 @@ const fmcp = {
       title: "INDIA IS RIGHT",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_India_Is_Right.mp4`,
-      audio: `${base}/audio/INDIA IS RIGHT mix Walter .wav`,
+      audio: null,
       loop: true,
       advance: "manual",
       filter: {
