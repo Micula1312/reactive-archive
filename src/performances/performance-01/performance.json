@@ -1,0 +1,83 @@
+{
+  "id": "performance-01",
+  "title": "Reactive Archive — Performance 01",
+  "author": "Micol Gelsi",
+  "scenes": [
+    {
+      "id": "intro-text",
+      "title": "Intro",
+      "type": "text",
+      "content": "intro",
+      "duration": 60000,
+      "typingSpeed": 42,
+      "cursor": true,
+      "audioReactive": false
+    },
+    {
+      "id": "video-01-a",
+      "title": "Video 01 — Apertura",
+      "type": "video",
+      "src": "/reactive-archive/video-01.mp4",
+      "loop": true,
+      "playbackRate": 1,
+      "audioReactive": true,
+      "reactivity": 0.7
+    },
+    {
+      "id": "video-02-a",
+      "title": "Video 02 — Flusso",
+      "type": "video",
+      "src": "/reactive-archive/video-02.mp4",
+      "loop": true,
+      "playbackRate": 1,
+      "audioReactive": true,
+      "reactivity": 1
+    },
+    {
+      "id": "hydra-01",
+      "title": "Hydra — Deriva",
+      "type": "hydra",
+      "module": "drift",
+      "audioReactive": true,
+      "reactivity": 0.85
+    },
+    {
+      "id": "video-01-b",
+      "title": "Video 01 — Ritorno",
+      "type": "video",
+      "src": "/reactive-archive/video-01.mp4",
+      "loop": true,
+      "playbackRate": 0.85,
+      "audioReactive": true,
+      "reactivity": 0.9
+    },
+    {
+      "id": "video-02-b",
+      "title": "Video 02 — Accelerazione",
+      "type": "video",
+      "src": "/reactive-archive/video-02.mp4",
+      "loop": true,
+      "playbackRate": 1.15,
+      "audioReactive": true,
+      "reactivity": 1.15
+    },
+    {
+      "id": "outro-text",
+      "title": "Interludio testuale",
+      "type": "text",
+      "content": "outro",
+      "duration": 30000,
+      "typingSpeed": 55,
+      "cursor": true,
+      "audioReactive": false
+    },
+    {
+      "id": "hydra-final",
+      "title": "Hydra — Finale",
+      "type": "hydra",
+      "module": "finale",
+      "audioReactive": true,
+      "reactivity": 1.25
+    }
+  ]
+}
