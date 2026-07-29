@@ -3,7 +3,7 @@ import AudioManager from "./AudioManager.js";
 import { UIManager } from "./AppUi.js";
 import SceneManager from "./SceneManager.js";
 import PerformanceMonitor from "./PerformanceMonitor.js";
-import { performance as performanceScore } from "./Performance.js";
+import performanceScore from "../performances/fmcp/index.js";
 
 const canvas = document.querySelector("#visual-canvas");
 const video = document.querySelector("#source-video");
