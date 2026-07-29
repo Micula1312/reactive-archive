@@ -22,3 +22,18 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+
+
+# Reactive Archive local media
+public/reactive-archive/*/audio/
+public/reactive-archive/*/videos/
+
+*.mp4
+*.mov
+*.webm
+*.mp3
+*.wav
+*.aif
+*.aiff
+*.flac
