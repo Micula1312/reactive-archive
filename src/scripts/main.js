@@ -2,45 +2,19 @@ import Renderer from "./Renderer.js";
 import AudioManager from "./AudioManager.js";
 import { UIManager } from "./AppUi.js";
 import SceneManager from "./SceneManager.js";
+import PerformanceMonitor from "./PerformanceMonitor.js";
 import { performance as performanceScore } from "./Performance.js";
 
-/* =========================================================
-   ELEMENTI HTML
-   ========================================================= */
-
-const canvas =
-  document.querySelector("#visual-canvas");
-
-const video =
-  document.querySelector("#source-video");
-
-const startScreen =
-  document.querySelector("#start-screen");
-
-const startButton =
-  document.querySelector("#start-button");
-
-const status =
-  document.querySelector("#status");
-
-const debugPanel =
-  document.querySelector("#debug-panel");
-
-const audioValue =
-  document.querySelector("#audio-value");
-
-const bassValue =
-  document.querySelector("#bass-value");
-
-const midValue =
-  document.querySelector("#mid-value");
-
-const highValue =
-  document.querySelector("#high-value");
-
-/* =========================================================
-   VALIDAZIONE HTML
-   ========================================================= */
+const canvas = document.querySelector("#visual-canvas");
+const video = document.querySelector("#source-video");
+const startScreen = document.querySelector("#start-screen");
+const startButton = document.querySelector("#start-button");
+const status = document.querySelector("#status");
+const debugPanel = document.querySelector("#debug-panel");
+const audioValue = document.querySelector("#audio-value");
+const bassValue = document.querySelector("#bass-value");
+const midValue = document.querySelector("#mid-value");
+const highValue = document.querySelector("#high-value");
 
 if (
   !(canvas instanceof HTMLCanvasElement) ||
@@ -54,197 +28,114 @@ if (
   !(midValue instanceof HTMLElement) ||
   !(highValue instanceof HTMLElement)
 ) {
-  throw new Error(
-    "Mancano alcuni elementi necessari nella pagina."
-  );
+  throw new Error("Mancano alcuni elementi necessari nella pagina.");
 }
 
-/* =========================================================
-   MODULI
-   ========================================================= */
+const visualRenderer = new Renderer({ canvas, video });
+const audioManager = new AudioManager();
+const ui = new UIManager({
+  canvas,
+  video,
+  startScreen,
+  startButton,
+  status,
+  debugPanel,
+  audioValue,
+  bassValue,
+  midValue,
+  highValue
+});
 
-const visualRenderer =
-  new Renderer({
-    canvas,
-    video
-  });
+const sceneManager = new SceneManager({
+  video,
+  renderer: visualRenderer,
+  ui,
+  performance: performanceScore
+});
 
-const audioManager =
-  new AudioManager();
-
-const ui =
-  new UIManager({
-    canvas,
-    video,
-    startScreen,
-    startButton,
-    status,
-    debugPanel,
-    audioValue,
-    bassValue,
-    midValue,
-    highValue
-  });
-
-const sceneManager =
-  new SceneManager({
-    video,
-    renderer: visualRenderer,
-    ui,
-    performance: performanceScore
-  });
-
-/* =========================================================
-   STATO
-   ========================================================= */
+const performanceMonitor = new PerformanceMonitor({
+  performance: performanceScore,
+  sceneManager,
+  audioManager
+});
 
 let audioReactiveEnabled = true;
 let started = false;
 let visualVisibility = 0;
 let lastSoundTime = performance.now();
 
-/* =========================================================
-   LOOP GRAFICO
-   ========================================================= */
-
 function animate() {
   requestAnimationFrame(animate);
   visualRenderer.render();
 }
-
 animate();
-
-/* =========================================================
-   AUDIO E VISIBILITÀ
-   ========================================================= */
 
 function updateAudio() {
   requestAnimationFrame(updateAudio);
 
-  if (!started) {
-    return;
-  }
+  if (!started) return;
 
   const audioData = audioManager.update();
   const scene = sceneManager.currentScene;
   const now = performance.now();
-
-  const sceneAudioReactive =
-    scene.audioReactive ?? true;
-
-  const shouldReact =
-    audioReactiveEnabled && sceneAudioReactive;
-
-  const silenceThreshold =
-    scene.silenceThreshold ?? 0.035;
-
-  const silenceDelay =
-    scene.silenceDelay ?? 350;
-
-  const fadeInSpeed =
-    scene.fadeInSpeed ?? 0.12;
-
-  const fadeOutSpeed =
-    scene.fadeOutSpeed ?? 0.025;
+  const shouldReact = audioReactiveEnabled && (scene.audioReactive ?? true);
+  const silenceThreshold = scene.silenceThreshold ?? 0.035;
+  const silenceDelay = scene.silenceDelay ?? 350;
+  const fadeInSpeed = scene.fadeInSpeed ?? 0.12;
+  const fadeOutSpeed = scene.fadeOutSpeed ?? 0.025;
 
   if (!shouldReact) {
-    visualVisibility +=
-      (1 - visualVisibility) * fadeInSpeed;
+    visualVisibility += (1 - visualVisibility) * fadeInSpeed;
   } else if (audioData.level > silenceThreshold) {
     lastSoundTime = now;
-
-    visualVisibility +=
-      (1 - visualVisibility) * fadeInSpeed;
+    visualVisibility += (1 - visualVisibility) * fadeInSpeed;
   } else if (now - lastSoundTime > silenceDelay) {
-    visualVisibility +=
-      (0 - visualVisibility) * fadeOutSpeed;
+    visualVisibility += (0 - visualVisibility) * fadeOutSpeed;
   }
 
-  if (visualVisibility < 0.002) {
-    visualVisibility = 0;
-  }
-
-  if (visualVisibility > 0.998) {
-    visualVisibility = 1;
-  }
+  if (visualVisibility < 0.002) visualVisibility = 0;
+  if (visualVisibility > 0.998) visualVisibility = 1;
 
   canvas.style.opacity = String(visualVisibility);
+  visualRenderer.setVisibility(visualVisibility);
 
-  visualRenderer.setVisibility(
-    visualVisibility
-  );
+  const reactiveAudio = shouldReact
+    ? audioData
+    : { level: 0, bass: 0, mid: 0, high: 0 };
 
-  if (shouldReact) {
-    visualRenderer.setAudioData(audioData);
-  } else {
-    visualRenderer.setAudioData({
-      level: 0,
-      bass: 0,
-      mid: 0,
-      high: 0
-    });
-  }
-
+  visualRenderer.setAudioData(reactiveAudio);
+  sceneManager.update(reactiveAudio);
   ui.updateAudioValues(audioData);
+  performanceMonitor.publish(audioData);
 }
-
 updateAudio();
 
-/* =========================================================
-   AVVIO ESPERIENZA
-   ========================================================= */
-
 async function startExperience() {
-  if (started) {
-    return;
-  }
+  if (started) return;
 
   ui.setStartButtonDisabled(true);
   ui.setStatus("Attivazione del microfono…");
 
   try {
     await audioManager.start();
-
     ui.setStatus("Avvio della performance…");
-
     started = true;
     sceneManager.setStarted(true);
     lastSoundTime = performance.now();
-
-    await sceneManager.load(
-      sceneManager.currentIndex
-    );
-
+    await sceneManager.load(sceneManager.currentIndex);
+    performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
     ui.hideStartScreen();
-
-    document.documentElement
-      .requestFullscreen()
-      .catch(() => {});
+    document.documentElement.requestFullscreen().catch(() => {});
   } catch (error) {
     console.error(error);
-
-    ui.setStatus(
-      error instanceof Error
-        ? error.message
-        : "Errore durante l'avvio."
-    );
-
+    ui.setStatus(error instanceof Error ? error.message : "Errore durante l'avvio.");
     ui.setStartButtonDisabled(false);
   }
 }
 
-/* =========================================================
-   AUDIO REACTIVE
-   ========================================================= */
-
 function toggleAudioReactive() {
-  audioReactiveEnabled =
-    !audioReactiveEnabled;
-
-  ui.setAudioReactiveState(
-    audioReactiveEnabled
-  );
-
+  audioReactiveEnabled = !audioReactiveEnabled;
+  ui.setAudioReactiveState(audioReactiveEnabled);
   ui.setStatus(
     audioReactiveEnabled
       ? "Audio reactivity attiva"
@@ -252,41 +143,22 @@ function toggleAudioReactive() {
   );
 }
 
-/* =========================================================
-   MICROFONO / FAKE MODE
-   ========================================================= */
-
 async function toggleMicrophoneMode() {
   try {
     if (audioManager.fakeMode) {
-      ui.setStatus(
-        "Attivazione del microfono…"
-      );
-
+      ui.setStatus("Attivazione del microfono…");
       await audioManager.start();
-
       ui.setStatus("Microfono attivo");
     } else {
       audioManager.enableFakeMode();
-
-      ui.setStatus(
-        "Fake audio mode attivo"
-      );
+      ui.setStatus("Fake audio mode attivo");
     }
+    performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
   } catch (error) {
     console.error(error);
-
-    ui.setStatus(
-      error instanceof Error
-        ? error.message
-        : "Errore audio."
-    );
+    ui.setStatus(error instanceof Error ? error.message : "Errore audio.");
   }
 }
-
-/* =========================================================
-   COLLEGAMENTO UI
-   ========================================================= */
 
 ui.onStart(startExperience);
 ui.onNextVideo(() => sceneManager.next());
@@ -295,7 +167,6 @@ ui.onSelectVideo((index) => sceneManager.select(index));
 ui.onToggleAudioReactive(toggleAudioReactive);
 ui.onToggleMicrophoneMode(toggleMicrophoneMode);
 ui.onRestartVideo(() => sceneManager.restart());
+ui.setAudioReactiveState(audioReactiveEnabled);
 
-ui.setAudioReactiveState(
-  audioReactiveEnabled
-);
+performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
