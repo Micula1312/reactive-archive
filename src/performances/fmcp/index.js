@@ -1,4 +1,4 @@
-const base = `${import.meta.env.BASE_URL}/fmcp`;
+const base = "/reactive-archive/fmcp";
 
 const fmcp = {
   id: "fmcp",
