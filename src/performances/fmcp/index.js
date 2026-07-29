@@ -13,7 +13,7 @@ const fmcp = {
       title: "INTRODACQUA 8.30AM",
       type: "video",
       src: `${base}/videos/FMCP_visuals_NO_TITLE.mp4`,
-      audio: `${base}/audio/FMCP - INTRODACQUA 8.30AM vDani 2.mp3`,
+      audio: `${base}/audio/PRESET FMCP _ AI.mp3`,
       loop: true,
       advance: "manual",
       filter: {
@@ -30,7 +30,7 @@ const fmcp = {
       title: "MONTAGNA",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_DK.mp4`,
-      audio: `${base}/audio/FMCP_MONTAGNA.mp3`,
+      audio: `${base}/audio/PRESET FMCP_FORESTA mix v3.mp3`,
       loop: true,
       advance: "manual",
       filter: {
@@ -39,6 +39,42 @@ const fmcp = {
         bassImpact: 0.4,
         midFlow: 0.72,
         highDetail: 0.24
+      }
+    },
+
+        {
+      id: "fmcp-as-the-pig",
+      title: "AS THE PIG",
+      type: "video",
+      src: `${base}/videos/Fmcp_Visuals_As_The_Pig.mp4`,
+      audio: `${base}/audio/PRESET FMCP_ AS THE PIG.mp3`,
+      loop: true,
+      advance: "manual",
+      filter: {
+        preset: "glitch",
+        intensity: 0.72,
+        bassImpact: 0.9,
+        midFlow: 0.34,
+        highDetail: 0.78
+      }
+    },
+
+    
+
+    {
+      id: "fmcp-brutalismo",
+      title: "BRUTALISMO",
+      type: "video",
+      src: `${base}/videos/Fmcp_Visuals_Brutalismo.mp4`,
+      audio: `${base}/audio/PRESET FMCP_BRUTALISMO mix v1.mp3`,
+      loop: true,
+      advance: "manual",
+      filter: {
+        preset: "glitch",
+        intensity: 0.84,
+        bassImpact: 0.94,
+        midFlow: 0.3,
+        highDetail: 0.88
       }
     },
 
@@ -76,39 +112,6 @@ const fmcp = {
       }
     },
 
-    {
-      id: "fmcp-as-the-pig",
-      title: "AS THE PIG",
-      type: "video",
-      src: `${base}/videos/Fmcp_Visuals_As_The_Pig.mp4`,
-      audio: `${base}/audio/PRESET FMCP_ AS THE PIG.mp3`,
-      loop: true,
-      advance: "manual",
-      filter: {
-        preset: "glitch",
-        intensity: 0.72,
-        bassImpact: 0.9,
-        midFlow: 0.34,
-        highDetail: 0.78
-      }
-    },
-
-    {
-      id: "fmcp-brutalismo",
-      title: "BRUTALISMO",
-      type: "video",
-      src: `${base}/videos/Fmcp_Visuals_Brutalismo.mp4`,
-      audio: `${base}/audio/PRESET FMCP_BRUTALISMO mix v1.mp3`,
-      loop: true,
-      advance: "manual",
-      filter: {
-        preset: "glitch",
-        intensity: 0.84,
-        bassImpact: 0.94,
-        midFlow: 0.3,
-        highDetail: 0.88
-      }
-    },
 
     {
       id: "fmcp-foresta",
@@ -124,23 +127,6 @@ const fmcp = {
         bassImpact: 0.48,
         midFlow: 0.92,
         highDetail: 0.2
-      }
-    },
-
-    {
-      id: "fmcp-india-is-right",
-      title: "INDIA IS RIGHT",
-      type: "video",
-      src: `${base}/videos/Fmcp_Visuals_India_Is_Right.mp4`,
-      audio: `${base}/audio/INDIA IS RIGHT mix Walter .wav`,
-      loop: true,
-      advance: "manual",
-      filter: {
-        preset: "soft-gradient",
-        intensity: 0.66,
-        bassImpact: 0.5,
-        midFlow: 0.78,
-        highDetail: 0.34
       }
     }
   ],
