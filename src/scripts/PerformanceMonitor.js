@@ -10,36 +10,22 @@ export default class PerformanceMonitor {
     this.channel.addEventListener("message", async (event) => {
       const message = event.data;
       if (!message) return;
-
       if (message.type === "request-state") {
         this.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
         return;
       }
-
       if (message.type !== "regia-command") return;
 
       try {
         switch (message.command) {
           case "next":
-          case "go":
-            await this.sceneManager.next();
-            break;
-          case "previous":
-            await this.sceneManager.previous();
-            break;
-          case "select":
-            await this.sceneManager.select(Number(message.index));
-            break;
-          case "restart":
-            await this.sceneManager.restart();
-            break;
-          case "blackout":
-            this.onBlackout?.(Boolean(message.active));
-            break;
-          default:
-            return;
+          case "go": await this.sceneManager.next(); break;
+          case "previous": await this.sceneManager.previous(); break;
+          case "select": await this.sceneManager.select(Number(message.index)); break;
+          case "restart": await this.sceneManager.restart(); break;
+          case "blackout": this.onBlackout?.(Boolean(message.active)); break;
+          default: return;
         }
-
         this.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
       } catch (error) {
         console.error("Comando regia fallito:", error);
@@ -51,7 +37,6 @@ export default class PerformanceMonitor {
     const now = performance.now();
     if (!force && now - this.lastPublish < 100) return;
     this.lastPublish = now;
-
     const currentIndex = this.sceneManager.currentIndex;
     const scenes = this.performance.scenes;
     const currentScene = scenes[currentIndex];
@@ -71,17 +56,20 @@ export default class PerformanceMonitor {
           type: scene.type,
           dramaturgicalType: scene.dramaturgicalType,
           function: scene.function,
-          duration: scene.duration
+          duration: scene.duration,
+          filter: scene.filter?.preset,
+          hasAudio: Boolean(scene.audio)
         }))
       },
       started: this.sceneManager.started,
-      audioMode: this.audioManager.fakeMode ? "fake" : "microphone",
+      audioMode: this.audioManager.sourceMode || "idle",
       scene: {
         index: currentIndex,
         total: scenes.length,
         id: currentScene?.id,
         title: currentScene?.title,
-        type: currentScene?.type
+        type: currentScene?.type,
+        filter: currentScene?.filter?.preset
       },
       nextScene: {
         index: (currentIndex + 1) % scenes.length,
