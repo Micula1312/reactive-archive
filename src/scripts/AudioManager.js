@@ -53,7 +53,7 @@ export default class AudioManager {
     }
   }
 
-  async setCueTrack(src, { play = true, audible = true } = {}) {
+  async setCueTrack(src, { play = true, audible = true, activate = true } = {}) {
     this.cueTrack = src || null;
     this.cueAudio.pause();
     this.cueAudio.currentTime = 0;
@@ -68,22 +68,30 @@ export default class AudioManager {
     this.cueAudio.load();
 
     await this.ensureContext();
+
     if (!this.cueSource) {
       this.cueSource = this.audioContext.createMediaElementSource(this.cueAudio);
       this.cueSource.connect(this.audioContext.destination);
     }
 
-    if (this.mode !== "microphone") {
+    if (activate) {
       this.connectSource(this.cueSource);
       this.mode = "cue";
       this.fakeMode = false;
-      if (play) await this.cueAudio.play().catch((error) => console.warn("Traccia cue non riproducibile:", error));
+    }
+
+    if (play) {
+      try {
+        await this.cueAudio.play();
+      } catch (error) {
+        console.warn("Traccia cue non riproducibile:", error);
+      }
     }
   }
 
   async activateCueOrFake() {
     if (this.cueTrack) {
-      await this.setCueTrack(this.cueTrack, { play: true, audible: true });
+      await this.setCueTrack(this.cueTrack, { play: true, audible: true, activate: true });
       return;
     }
     this.enableFakeMode();
