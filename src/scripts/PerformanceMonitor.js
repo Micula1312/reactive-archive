@@ -1,42 +1,76 @@
 export default class PerformanceMonitor {
-  constructor({ performance, sceneManager, audioManager, onBlackout }) {
+  constructor({
+    performance,
+    sceneManager,
+    audioManager,
+    onBlackout,
+    onAudioFileSync,
+    audioFileSyncEnabled = false
+  }) {
     this.performance = performance;
     this.sceneManager = sceneManager;
     this.audioManager = audioManager;
     this.onBlackout = onBlackout;
+    this.onAudioFileSync = onAudioFileSync;
     this.channel = new BroadcastChannel("reactive-archive-monitor");
     this.lastPublish = 0;
     this.audioMuted = false;
+    this.audioFileSyncEnabled = Boolean(audioFileSyncEnabled);
 
     this.channel.addEventListener("message", async (event) => {
       const message = event.data;
       if (!message) return;
+
       if (message.type === "request-state") {
         this.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
         return;
       }
+
       if (message.type !== "regia-command") return;
 
       try {
         switch (message.command) {
           case "next":
-          case "go": await this.sceneManager.next(); break;
-          case "previous": await this.sceneManager.previous(); break;
-          case "select": await this.sceneManager.select(Number(message.index)); break;
-          case "restart": await this.sceneManager.restart(); break;
-          case "pause": await this.sceneManager.togglePause(message.active); break;
+          case "go":
+            await this.sceneManager.next();
+            break;
+          case "previous":
+            await this.sceneManager.previous();
+            break;
+          case "select":
+            await this.sceneManager.select(Number(message.index));
+            break;
+          case "restart":
+            await this.sceneManager.restart();
+            break;
+          case "pause":
+            await this.sceneManager.togglePause(message.active);
+            break;
           case "mute":
             this.audioMuted = typeof message.active === "boolean"
               ? message.active
               : !this.audioMuted;
             this.audioManager.cueAudio.muted = this.audioMuted;
             break;
-          case "blackout": this.onBlackout?.(Boolean(message.active)); break;
-          case "set-parameter":
-            this.sceneManager.setParameter(String(message.key), Number(message.value));
+          case "audio-file-sync":
+            this.audioFileSyncEnabled = typeof message.active === "boolean"
+              ? message.active
+              : !this.audioFileSyncEnabled;
+            await this.onAudioFileSync?.(this.audioFileSyncEnabled);
             break;
-          default: return;
+          case "blackout":
+            this.onBlackout?.(Boolean(message.active));
+            break;
+          case "set-parameter":
+            this.sceneManager.setParameter(
+              String(message.key),
+              Number(message.value)
+            );
+            break;
+          default:
+            return;
         }
+
         this.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
       } catch (error) {
         console.error("Comando regia fallito:", error);
@@ -47,7 +81,9 @@ export default class PerformanceMonitor {
   publish(audioData, force = false) {
     const now = performance.now();
     if (!force && now - this.lastPublish < 100) return;
+
     this.lastPublish = now;
+
     const currentIndex = this.sceneManager.currentIndex;
     const scenes = this.performance.scenes;
     const currentScene = scenes[currentIndex];
@@ -75,6 +111,7 @@ export default class PerformanceMonitor {
       started: this.sceneManager.started,
       audioMode: this.audioManager.sourceMode || "idle",
       audioMuted: this.audioMuted,
+      audioFileSyncEnabled: this.audioFileSyncEnabled,
       paused: this.sceneManager.isPaused,
       scene: {
         index: currentIndex,
