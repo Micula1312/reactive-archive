@@ -39,14 +39,14 @@
       .control output { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; opacity: .7; }
       .control input[type="range"] { width: 100%; accent-color: #fff; }
       .controls-empty { opacity: .45; font-size: 13px; }
-      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(7, minmax(82px, 1fr)); gap: 10px; }
+      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(8, minmax(82px, 1fr)); gap: 10px; }
       footer button { min-height: 58px; border: 1px solid #555; background: #111; color: #fff; cursor: pointer; }
       footer button:hover { background: #222; }
       footer .go { background: #f5f5f5; color: #080808; font-weight: 700; }
       footer .blackout.active { background: #a00; border-color: #f44; }
       footer .toggle.active { background: #f5f5f5; color: #080808; border-color: #fff; }
-      @media (max-width: 900px) { footer { grid-template-columns: repeat(4, 1fr); } }
-      @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 34vh; border-right: 0; border-bottom: 1px solid #333; } .control { grid-template-columns: 100px 1fr 48px; } footer { grid-template-columns: repeat(3, 1fr); } }
+      @media (max-width: 1000px) { footer { grid-template-columns: repeat(4, 1fr); } }
+      @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 34vh; border-right: 0; border-bottom: 1px solid #333; } .control { grid-template-columns: 100px 1fr 48px; } footer { grid-template-columns: repeat(2, 1fr); } }
     </style>
   </head>
   <body>
@@ -89,6 +89,7 @@
         <button id="pause-button" class="toggle">Ⅱ PAUSA</button>
         <button class="go" data-command="go">GO ▶</button>
         <button data-command="next">NEXT ▶</button>
+        <button id="sync-button" class="toggle">FILE AUDIO OFF</button>
         <button id="mute-button" class="toggle">🔊 AUDIO</button>
         <button id="blackout-button" class="blackout">BLACKOUT</button>
       </footer>
@@ -106,9 +107,12 @@
       const blackoutButton = document.querySelector("#blackout-button");
       const muteButton = document.querySelector("#mute-button");
       const pauseButton = document.querySelector("#pause-button");
+      const syncButton = document.querySelector("#sync-button");
+
       let blackout = false;
       let muted = false;
       let paused = false;
+      let audioFileSyncEnabled = false;
       let lastStateAt = 0;
       let scenes = [];
       let activeSceneId = null;
@@ -183,11 +187,16 @@
         muteButton.textContent = muted ? "🔇 MUTO" : "🔊 AUDIO";
         pauseButton.classList.toggle("active", paused);
         pauseButton.textContent = paused ? "▶ RIPRENDI" : "Ⅱ PAUSA";
+        syncButton.classList.toggle("active", audioFileSyncEnabled);
+        syncButton.textContent = audioFileSyncEnabled
+          ? "FILE AUDIO ON"
+          : "FILE AUDIO OFF";
       }
 
       channel.addEventListener("message", (event) => {
         const state = event.data;
         if (state?.type !== "performance-state") return;
+
         lastStateAt = Date.now();
         dot.classList.add("online");
         connectionLabel.textContent = state.started ? state.audioMode : "player pronto";
@@ -197,6 +206,7 @@
         scenes = state.performance?.scenes || scenes;
         muted = Boolean(state.audioMuted);
         paused = Boolean(state.paused);
+        audioFileSyncEnabled = Boolean(state.audioFileSyncEnabled);
         renderToggleStates();
         renderCues(state.scene?.index ?? -1);
         renderControls(state.scene?.controls, state.scene?.id);
@@ -208,6 +218,12 @@
 
       document.querySelectorAll("[data-command]").forEach((button) => {
         button.addEventListener("click", () => send(button.dataset.command));
+      });
+
+      syncButton.addEventListener("click", () => {
+        audioFileSyncEnabled = !audioFileSyncEnabled;
+        renderToggleStates();
+        send("audio-file-sync", { active: audioFileSyncEnabled });
       });
 
       muteButton.addEventListener("click", () => {
@@ -235,6 +251,7 @@
         if (event.key.toLowerCase() === "b") blackoutButton.click();
         if (event.key.toLowerCase() === "m") muteButton.click();
         if (event.key.toLowerCase() === "p") pauseButton.click();
+        if (event.key.toLowerCase() === "a") syncButton.click();
       });
 
       setInterval(() => {
