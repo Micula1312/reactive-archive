@@ -22,9 +22,7 @@ const performanceScore =
   performanceModules[performanceModulePath]?.default;
 
 if (!performanceScore) {
-  throw new Error(
-    `Performance non trovata: ${performanceName}`
-  );
+  throw new Error(`Performance non trovata: ${performanceName}`);
 }
 
 const canvas = document.querySelector("#visual-canvas");
@@ -84,6 +82,13 @@ let microphonePreparationPromise = null;
 let visualVisibility = 0;
 let lastSoundTime = performance.now();
 
+// Le performance microphone-first, come FMCP, partono senza riprodurre
+// automaticamente i file audio. La regia può abilitarli in qualsiasi momento.
+let audioFileSyncEnabled =
+  typeof performanceScore.audioFileSync === "boolean"
+    ? performanceScore.audioFileSync
+    : performanceScore.audioPolicy !== "microphone-first";
+
 function setBlackout(active) {
   blackoutActive = active;
   document.body.dataset.blackout = active ? "true" : "false";
@@ -100,11 +105,36 @@ function setBlackout(active) {
   ui.setStatus(active ? "BLACKOUT" : `Scena ${sceneManager.currentIndex + 1}`);
 }
 
+async function setAudioFileSync(active) {
+  audioFileSyncEnabled = Boolean(active);
+
+  if (!audioFileSyncEnabled) {
+    audioManager.cueAudio.pause();
+    audioManager.cueAudio.currentTime = 0;
+    ui.setStatus("Sync audio file OFF — analisi microfono attiva");
+    return audioFileSyncEnabled;
+  }
+
+  const scene = sceneManager.currentScene;
+
+  if (started && scene?.audio) {
+    await audioManager.setCueTrack(scene.audio, {
+      play: true,
+      audible: scene.audioAudible ?? true
+    });
+  }
+
+  ui.setStatus("Sync audio file ON");
+  return audioFileSyncEnabled;
+}
+
 const performanceMonitor = new PerformanceMonitor({
   performance: performanceScore,
   sceneManager,
   audioManager,
-  onBlackout: setBlackout
+  onBlackout: setBlackout,
+  onAudioFileSync: setAudioFileSync,
+  audioFileSyncEnabled
 });
 
 window.addEventListener("reactive-archive:scene-change", async (event) => {
@@ -112,12 +142,11 @@ window.addEventListener("reactive-archive:scene-change", async (event) => {
 
   subtitleManager.setScene(scene);
 
-  // Cambia o interrompe la traccia soltanto quando la scena dichiara
-  // esplicitamente la proprietà audio. In assenza della proprietà,
-  // il sottofondo già avviato continua durante le scene successive.
+  // Il file audio viene caricato per la scena, ma parte soltanto quando
+  // SYNC AUDIO FILE è attivo. Il microfono resta la sorgente dell'analyser.
   if (scene && Object.prototype.hasOwnProperty.call(scene, "audio")) {
     await audioManager.setCueTrack(scene.audio, {
-      play: started,
+      play: started && audioFileSyncEnabled,
       audible: scene.audioAudible ?? true
     });
   }
@@ -188,7 +217,7 @@ function prepareMicrophone() {
   ui.setStatus("Richiesta autorizzazione microfono…");
 
   microphonePreparationPromise = audioManager
-    .start()
+    .start({ fallbackPlay: false })
     .then(() => {
       ui.setStatus(
         audioManager.fakeMode
@@ -212,7 +241,6 @@ async function startExperience() {
   ui.setStatus("Avvio della performance…");
 
   try {
-    // AudioContext e richiesta microfono partono solo qui, dentro il click dell'utente.
     await prepareMicrophone();
 
     if (
@@ -228,7 +256,11 @@ async function startExperience() {
 
     await sceneManager.load(sceneManager.currentIndex);
 
-    ui.setStatus(`Audio: ${audioManager.sourceMode}`);
+    ui.setStatus(
+      audioFileSyncEnabled
+        ? `Audio: ${audioManager.sourceMode} + file sync`
+        : `Audio: ${audioManager.sourceMode} — file sync OFF`
+    );
     performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
     ui.hideStartScreen();
 
@@ -260,7 +292,9 @@ async function toggleMicrophoneMode() {
       microphonePreparationPromise = null;
       await prepareMicrophone();
     } else {
-      await audioManager.activateCueOrFake();
+      // Passare dalla sorgente microfono alla cue non deve avviare il file
+      // quando il sync è disabilitato.
+      await audioManager.activateCueOrFake({ play: audioFileSyncEnabled });
     }
 
     ui.setStatus(`Audio: ${audioManager.sourceMode}`);
@@ -288,7 +322,4 @@ ui.onRestartVideo(() => sceneManager.restart());
 ui.setAudioReactiveState(audioReactiveEnabled);
 
 performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
-
-// Non avviare AudioContext o getUserMedia al caricamento della pagina:
-// Chrome li consente soltanto dopo un gesto esplicito dell'utente.
 ui.setStatus("Premi AVVIA per iniziare e autorizzare il microfono.");
