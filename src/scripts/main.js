@@ -3,7 +3,28 @@ import AudioManager from "./AudioManager.js";
 import { UIManager } from "./AppUi.js";
 import SceneManager from "./SceneManager.js";
 import PerformanceMonitor from "./PerformanceMonitor.js";
-import performanceScore from "../performances/fmcp/index.js";
+
+const performanceModules = import.meta.glob(
+  "../performances/*/index.js",
+  { eager: true }
+);
+
+const performanceName =
+  document.documentElement.dataset.performance ||
+  document.body.dataset.performance ||
+  "fmcp";
+
+const performanceModulePath =
+  `../performances/${performanceName}/index.js`;
+
+const performanceScore =
+  performanceModules[performanceModulePath]?.default;
+
+if (!performanceScore) {
+  throw new Error(
+    `Performance non trovata: ${performanceName}`
+  );
+}
 
 const canvas = document.querySelector("#visual-canvas");
 const video = document.querySelector("#source-video");
