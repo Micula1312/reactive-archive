@@ -4,18 +4,20 @@ export default class PerformanceMonitor {
     sceneManager,
     audioManager,
     onBlackout,
-    onAudioFileSync,
-    audioFileSyncEnabled = false
+    onSoloMic,
+    getSoloMic = () => false,
+    getAudioFileSync = () => false
   }) {
     this.performance = performance;
     this.sceneManager = sceneManager;
     this.audioManager = audioManager;
     this.onBlackout = onBlackout;
-    this.onAudioFileSync = onAudioFileSync;
+    this.onSoloMic = onSoloMic;
+    this.getSoloMic = getSoloMic;
+    this.getAudioFileSync = getAudioFileSync;
     this.channel = new BroadcastChannel("reactive-archive-monitor");
     this.lastPublish = 0;
     this.audioMuted = false;
-    this.audioFileSyncEnabled = Boolean(audioFileSyncEnabled);
 
     this.channel.addEventListener("message", async (event) => {
       const message = event.data;
@@ -50,13 +52,10 @@ export default class PerformanceMonitor {
             this.audioMuted = typeof message.active === "boolean"
               ? message.active
               : !this.audioMuted;
-            this.audioManager.cueAudio.muted = this.audioMuted;
+            this.audioManager.setOutputMuted(this.audioMuted);
             break;
-          case "audio-file-sync":
-            this.audioFileSyncEnabled = typeof message.active === "boolean"
-              ? message.active
-              : !this.audioFileSyncEnabled;
-            await this.onAudioFileSync?.(this.audioFileSyncEnabled);
+          case "solo-mic":
+            await this.onSoloMic?.(Boolean(message.active));
             break;
           case "blackout":
             this.onBlackout?.(Boolean(message.active));
@@ -83,7 +82,6 @@ export default class PerformanceMonitor {
     if (!force && now - this.lastPublish < 100) return;
 
     this.lastPublish = now;
-
     const currentIndex = this.sceneManager.currentIndex;
     const scenes = this.performance.scenes;
     const currentScene = scenes[currentIndex];
@@ -111,7 +109,8 @@ export default class PerformanceMonitor {
       started: this.sceneManager.started,
       audioMode: this.audioManager.sourceMode || "idle",
       audioMuted: this.audioMuted,
-      audioFileSyncEnabled: this.audioFileSyncEnabled,
+      soloMicEnabled: Boolean(this.getSoloMic()),
+      audioFileSyncEnabled: Boolean(this.getAudioFileSync()),
       paused: this.sceneManager.isPaused,
       scene: {
         index: currentIndex,
