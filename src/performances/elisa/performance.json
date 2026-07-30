@@ -3,10 +3,10 @@
   "title": "Aicha Kandisha — Elisa Performance",
   "author": "Micol Gelsi",
   "scenes": [
-    {"id":"clock-face-id","order":1,"title":"Orologio + Face ID","type":"video","dramaturgicalType":"video","function":"Ingresso / riconoscimento","src":"/elisa/videos/01-orologio-face-id.mp4","loop":true,"audioReactive":true},
+    {"id":"clock-face-id","order":1,"title":"Orologio + Face ID","type":"video","dramaturgicalType":"video","function":"Ingresso / riconoscimento","src":"/elisa/videos/Video-01.mp4","loop":true,"audioReactive":true},
     {"id":"hydra-genesis","order":2,"title":"HYDRA 0 — Genesi","type":"hydra","dramaturgicalType":"live-coding","function":"Nascita del linguaggio","module":"genesis","duration":120000,"timing":"2'","liveCoding":"Punto → respiro → forma → organismo minimo","atmosphere":"Bianco/Nero","audioReactive":true,"reactivity":0.65},
-    {"id":"loader","order":3,"title":"Loader","type":"video","dramaturgicalType":"video","function":"Sospensione","src":"/elisa/videos/03-loader.mp4","loop":true,"audioReactive":true},
-    {"id":"vertical-body","order":4,"title":"Video verticale","type":"video","dramaturgicalType":"video","function":"Corpo","src":"/elisa/videos/04-video-verticale.mp4","loop":true,"audioReactive":true},
+    {"id":"loader","order":3,"title":"Loader","type":"video","dramaturgicalType":"video","function":"Sospensione","src":"/elisa/videos/03-Loader.mp4","loop":true,"audioReactive":true},
+    {"id":"vertical-body","order":4,"title":"Video verticale","type":"video","dramaturgicalType":"video","function":"Corpo","src":"/elisa/videos/04-Video-Verticale.mp4","loop":true,"audioReactive":true},
     {"id":"hydra-apparition","order":5,"title":"HYDRA I — Apparizione","type":"hydra","dramaturgicalType":"live-coding","function":"Primo incontro","module":"apparition","dialogue":"apparition","duration":90000,"timing":"1'30","liveCoding":"Punto • Respiro • Secondo punto • Connessione • Alone rosso","atmosphere":"Minimale, cosmico","audioReactive":true,"reactivity":0.75},
     {"id":"photo-memory","order":6,"title":"Foto","type":"video","dramaturgicalType":"archive","function":"Memoria","src":"/elisa/videos/06-foto.mp4","loop":true,"audioReactive":true},
     {"id":"touch-3d","order":7,"title":"3D Touch","type":"video","dramaturgicalType":"video","function":"Deformazione","src":"/elisa/videos/07-3d-touch.mp4","loop":true,"audioReactive":true},
