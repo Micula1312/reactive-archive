@@ -52,33 +52,29 @@ export default class SceneManager {
     document.querySelectorAll("[data-scene-layer]").forEach((element) => element.remove());
   }
 
-  getSecondClipUrl(src) {
-    if (!src || /-2(?=\.[^.?#]+(?:[?#].*)?$)/i.test(src)) return null;
-    return src.replace(/(\.[^.?#]+)([?#].*)?$/, "-2$1$2");
-  }
+  buildVideoSequence(scene) {
+    const sequence = [];
 
-  async assetExists(src) {
-    if (!src) return false;
-    try {
-      const response = await fetch(src, { method: "HEAD", cache: "no-store" });
-      return response.ok;
-    } catch {
-      return false;
+    if (scene.src) sequence.push(scene.src);
+
+    // Le clip aggiuntive devono essere dichiarate esplicitamente nella partitura.
+    // In questo modo il player non prova più URL "-2" inesistenti e non genera 404.
+    if (Array.isArray(scene.sequence)) {
+      for (const src of scene.sequence) {
+        if (src && !sequence.includes(src)) sequence.push(src);
+      }
     }
-  }
 
-  async buildVideoSequence(scene) {
-    const sequence = [scene.src];
-    const secondClip = scene.sequence?.[1] ?? scene.part2 ?? this.getSecondClipUrl(scene.src);
-
-    if (secondClip && await this.assetExists(secondClip)) {
-      sequence.push(secondClip);
+    if (scene.part2 && !sequence.includes(scene.part2)) {
+      sequence.push(scene.part2);
     }
 
     return sequence;
   }
 
   async playVideoSource(src, { loop = false } = {}) {
+    if (!src) throw new Error("Scena video senza sorgente.");
+
     this.video.pause();
     this.video.src = src;
     this.video.loop = loop;
@@ -86,8 +82,11 @@ export default class SceneManager {
     this.video.load();
 
     if (this.started && !this.paused) {
-      try { await this.video.play(); }
-      catch (error) { console.error("Impossibile riprodurre la scena video:", error); }
+      try {
+        await this.video.play();
+      } catch (error) {
+        console.error("Impossibile riprodurre la scena video:", error);
+      }
     }
   }
 
@@ -112,7 +111,7 @@ export default class SceneManager {
     this.renderer.setReactivity(scene.reactivity ?? 1);
     this.renderer.setEffect(scene.filter ?? {});
 
-    this.videoSequence = await this.buildVideoSequence(scene);
+    this.videoSequence = this.buildVideoSequence(scene);
     this.videoSequenceIndex = 0;
     const hasSequence = this.videoSequence.length > 1;
     const shouldLoop = this.automaticMode ? false : (hasSequence ? false : (scene.loop ?? true));
