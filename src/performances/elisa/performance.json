@@ -25,7 +25,12 @@
     {"id":"touch-3d","order":7,"start":"07:20","title":"3D Touch","type":"video","dramaturgicalType":"video","function":"Deformazione","clips":["/elisa/videos/07-3d-touch.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":1,"midFlow":0.9,"highDetail":1}},
     {"id":"rotation","order":8,"start":"08:35","title":"Rotazione","type":"video","dramaturgicalType":"video","function":"Perdita orientamento","clips":["/elisa/videos/08-Rotazione.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":0.78,"bassImpact":0.84,"midFlow":0.58,"highDetail":0.72}},
     {"id":"hydra-resonance","order":9,"start":"09:50","title":"HYDRA II — Risonanza","type":"hydra","dramaturgicalType":"live-coding","function":"Ascolto reciproco","module":"resonance","dialogue":"resonance","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
+<<<<<<< Updated upstream
     {"id":"forest-numbers","order":10,"start":"11:30","title":"Foresta + Numeri","type":"video","dramaturgicalType":"archive","function":"Accumulo","clips":["/elisa/videos/10-foresta-numeri.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":0.96,"midFlow":0.92,"highDetail":1}},
     {"id":"forest-images","order":11,"start":"13:10","title":"Foresta + Immagini","type":"video","dramaturgicalType":"archive","function":"Stratificazione","clips":["/elisa/videos/11-foresta-immagini.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"defocus","intensity":0.7,"bassImpact":0.48,"midFlow":0.9,"highDetail":0.3}}
+=======
+    {"id":"forest-numbers","order":10,"start":"11:30","title":"Foresta + Numeri","type":"video","dramaturgicalType":"archive","function":"Accumulo","clips":["/elisa/videos/10-Foresta-Numeri.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":0.96,"midFlow":0.92,"highDetail":1}},
+    {"id":"forest-images","order":11,"start":"13:10","title":"Foresta + Immagini","type":"video","dramaturgicalType":"archive","function":"Stratificazione","clips":["/elisa/videos/11-Foresta-Immagini.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"invert-slash","intensity":1,"bassImpact":1,"midFlow":1,"highDetail":1}}
+>>>>>>> Stashed changes
   ]
 }
