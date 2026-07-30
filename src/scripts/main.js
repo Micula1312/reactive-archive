@@ -92,6 +92,7 @@ const ui =
 let currentVideoIndex = 0;
 let audioReactiveEnabled = true;
 let started = false;
+let microphonePreparationPromise = null;
 
 const SILENCE_THRESHOLD = 0.035;
 const SILENCE_DELAY = 350;
@@ -189,6 +190,41 @@ function updateAudio() {
 updateAudio();
 
 /* =========================================================
+   PREPARAZIONE MICROFONO IMMEDIATA
+   ========================================================= */
+
+function prepareMicrophone() {
+  if (microphonePreparationPromise) {
+    return microphonePreparationPromise;
+  }
+
+  ui.setStatus(
+    "Autorizza il microfono per continuare…"
+  );
+
+  microphonePreparationPromise =
+    audioManager.start()
+      .then(() => {
+        ui.setStatus(
+          audioManager.fakeMode
+            ? "Microfono non disponibile — modalità fake pronta"
+            : "Microfono autorizzato — premi START"
+        );
+      })
+      .catch((error) => {
+        console.error(error);
+
+        ui.setStatus(
+          error instanceof Error
+            ? error.message
+            : "Errore durante l’attivazione del microfono."
+        );
+      });
+
+  return microphonePreparationPromise;
+}
+
+/* =========================================================
    AVVIO ESPERIENZA
    ========================================================= */
 
@@ -203,7 +239,14 @@ async function startExperience() {
   );
 
   try {
-    await audioManager.start();
+    await prepareMicrophone();
+
+    if (
+      audioManager.audioContext &&
+      audioManager.audioContext.state === "suspended"
+    ) {
+      await audioManager.audioContext.resume();
+    }
 
     ui.setStatus(
       "Avvio del video…"
@@ -342,10 +385,13 @@ async function toggleMicrophoneMode() {
         "Attivazione del microfono…"
       );
 
-      await audioManager.start();
+      microphonePreparationPromise = null;
+      await prepareMicrophone();
 
       ui.setStatus(
-        "Microfono attivo"
+        audioManager.fakeMode
+          ? "Microfono non disponibile"
+          : "Microfono attivo"
       );
     } else {
       audioManager.enableFakeMode();
@@ -400,3 +446,5 @@ ui.onRestartVideo(
 ui.setAudioReactiveState(
   audioReactiveEnabled
 );
+
+prepareMicrophone();
