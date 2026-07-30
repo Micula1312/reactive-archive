@@ -1,5 +1,6 @@
 # build output
 dist/
+
 # generated types
 .astro/
 
@@ -12,7 +13,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-
 # environment variables
 .env
 .env.production
@@ -23,14 +23,16 @@ pnpm-debug.log*
 # jetbrains setting folder
 .idea/
 
-
-
-# Reactive Archive local media
+# local audiovisual media
+# Keep performance configs and code in Git, but not heavy audio/video assets.
 public/reactive-archive/*/audio/
 public/reactive-archive/*/videos/
 
+# common media formats as an additional safety net
 *.mp4
 *.mov
+*.mkv
+*.avi
 *.webm
 *.mp3
 *.wav
