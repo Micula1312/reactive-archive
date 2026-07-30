@@ -76,6 +76,10 @@ export default class AudioManager {
     return this.outputMuted;
   }
 
+  disconnectCueOutput() {
+    this.cueAudio.volume = 0;
+  }
+
   async start({ fallbackPlay = false } = {}) {
     await this.ensureContext();
 
