@@ -107,10 +107,15 @@ const performanceMonitor = new PerformanceMonitor({
 window.addEventListener("reactive-archive:scene-change", async (event) => {
   const scene = event.detail?.scene;
 
-  await audioManager.setCueTrack(scene?.audio ?? null, {
-    play: started,
-    audible: scene?.audioAudible ?? true
-  });
+  // Cambia o interrompe la traccia soltanto quando la scena dichiara
+  // esplicitamente la proprietà audio. In assenza della proprietà,
+  // il sottofondo già avviato continua durante le scene successive.
+  if (scene && Object.prototype.hasOwnProperty.call(scene, "audio")) {
+    await audioManager.setCueTrack(scene.audio, {
+      play: started,
+      audible: scene.audioAudible ?? true
+    });
+  }
 
   performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
 });
