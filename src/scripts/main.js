@@ -52,11 +52,7 @@ if (
   throw new Error("Mancano alcuni elementi necessari nella pagina.");
 }
 
-const visualRenderer = new Renderer({
-  canvas,
-  video
-});
-
+const visualRenderer = new Renderer({ canvas, video });
 const audioManager = new AudioManager();
 
 const ui = new UIManager({
@@ -86,45 +82,20 @@ let microphonePreparationPromise = null;
 let visualVisibility = 0;
 let lastSoundTime = performance.now();
 
-/* =========================================================
-   BLACKOUT
-   ========================================================= */
-
 function setBlackout(active) {
   blackoutActive = active;
+  document.body.dataset.blackout = active ? "true" : "false";
+  canvas.style.visibility = active ? "hidden" : "visible";
+  video.style.visibility = active ? "hidden" : "visible";
 
-  document.body.dataset.blackout = active
-    ? "true"
-    : "false";
+  document.querySelectorAll("[data-scene-layer]").forEach((element) => {
+    if (element instanceof HTMLElement) {
+      element.style.visibility = active ? "hidden" : "visible";
+    }
+  });
 
-  canvas.style.visibility = active
-    ? "hidden"
-    : "visible";
-
-  video.style.visibility = active
-    ? "hidden"
-    : "visible";
-
-  document
-    .querySelectorAll("[data-scene-layer]")
-    .forEach((element) => {
-      if (element instanceof HTMLElement) {
-        element.style.visibility = active
-          ? "hidden"
-          : "visible";
-      }
-    });
-
-  ui.setStatus(
-    active
-      ? "BLACKOUT"
-      : `Scena ${sceneManager.currentIndex + 1}`
-  );
+  ui.setStatus(active ? "BLACKOUT" : `Scena ${sceneManager.currentIndex + 1}`);
 }
-
-/* =========================================================
-   PERFORMANCE MONITOR
-   ========================================================= */
 
 const performanceMonitor = new PerformanceMonitor({
   performance: performanceScore,
@@ -133,38 +104,16 @@ const performanceMonitor = new PerformanceMonitor({
   onBlackout: setBlackout
 });
 
-/* =========================================================
-   CAMBIO SCENA
-   ========================================================= */
+window.addEventListener("reactive-archive:scene-change", async (event) => {
+  const scene = event.detail?.scene;
 
-window.addEventListener(
-  "reactive-archive:scene-change",
-  async (event) => {
-    const scene = event.detail?.scene;
+  await audioManager.setCueTrack(scene?.audio ?? null, {
+    play: started,
+    audible: scene?.audioAudible ?? true
+  });
 
-    await audioManager.setCueTrack(
-      scene?.audio ?? null,
-      {
-        play: started,
-        audible: scene?.audioAudible ?? true
-      }
-    );
-
-    performanceMonitor.publish(
-      {
-        level: 0,
-        bass: 0,
-        mid: 0,
-        high: 0
-      },
-      true
-    );
-  }
-);
-
-/* =========================================================
-   RENDER LOOP
-   ========================================================= */
+  performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
+});
 
 function animate() {
   requestAnimationFrame(animate);
@@ -173,234 +122,119 @@ function animate() {
 
 animate();
 
-/* =========================================================
-   AUDIO REACTIVE LOOP
-   ========================================================= */
-
 function updateAudio() {
   requestAnimationFrame(updateAudio);
 
-  if (!started) {
-    return;
-  }
+  if (!started) return;
 
   const audioData = audioManager.update();
   const scene = sceneManager.currentScene;
   const now = performance.now();
 
-  if (!scene) {
-    return;
-  }
+  if (!scene) return;
 
-  const shouldReact =
-    audioReactiveEnabled &&
-    (scene.audioReactive ?? true);
-
-  const silenceThreshold =
-    scene.silenceThreshold ?? 0.035;
-
-  const silenceDelay =
-    scene.silenceDelay ?? 350;
-
-  const fadeInSpeed =
-    scene.fadeInSpeed ?? 0.12;
-
-  const fadeOutSpeed =
-    scene.fadeOutSpeed ?? 0.025;
+  const shouldReact = audioReactiveEnabled && (scene.audioReactive ?? true);
+  const silenceThreshold = scene.silenceThreshold ?? 0.035;
+  const silenceDelay = scene.silenceDelay ?? 350;
+  const fadeInSpeed = scene.fadeInSpeed ?? 0.12;
+  const fadeOutSpeed = scene.fadeOutSpeed ?? 0.025;
 
   if (!shouldReact) {
-    visualVisibility +=
-      (1 - visualVisibility) *
-      fadeInSpeed;
-  } else if (
-    audioData.level >
-    silenceThreshold
-  ) {
+    visualVisibility += (1 - visualVisibility) * fadeInSpeed;
+  } else if (audioData.level > silenceThreshold) {
     lastSoundTime = now;
-
-    visualVisibility +=
-      (1 - visualVisibility) *
-      fadeInSpeed;
-  } else if (
-    now - lastSoundTime >
-    silenceDelay
-  ) {
-    visualVisibility +=
-      (0 - visualVisibility) *
-      fadeOutSpeed;
+    visualVisibility += (1 - visualVisibility) * fadeInSpeed;
+  } else if (now - lastSoundTime > silenceDelay) {
+    visualVisibility += (0 - visualVisibility) * fadeOutSpeed;
   }
 
-  if (visualVisibility < 0.002) {
-    visualVisibility = 0;
-  }
-
-  if (visualVisibility > 0.998) {
-    visualVisibility = 1;
-  }
+  if (visualVisibility < 0.002) visualVisibility = 0;
+  if (visualVisibility > 0.998) visualVisibility = 1;
 
   if (!blackoutActive) {
-    canvas.style.opacity =
-      String(visualVisibility);
+    canvas.style.opacity = String(visualVisibility);
   }
 
-  visualRenderer.setVisibility(
-    visualVisibility
-  );
+  visualRenderer.setVisibility(visualVisibility);
 
   const reactiveAudio = shouldReact
     ? audioData
-    : {
-        level: 0,
-        bass: 0,
-        mid: 0,
-        high: 0
-      };
+    : { level: 0, bass: 0, mid: 0, high: 0 };
 
-  visualRenderer.setAudioData(
-    reactiveAudio
-  );
-
-  sceneManager.update(
-    reactiveAudio
-  );
-
-  ui.updateAudioValues(
-    audioData
-  );
-
-  performanceMonitor.publish(
-    audioData
-  );
+  visualRenderer.setAudioData(reactiveAudio);
+  sceneManager.update(reactiveAudio);
+  ui.updateAudioValues(audioData);
+  performanceMonitor.publish(audioData);
 }
 
 updateAudio();
-
-/* =========================================================
-   PREPARAZIONE MICROFONO
-   ========================================================= */
 
 function prepareMicrophone() {
   if (microphonePreparationPromise) {
     return microphonePreparationPromise;
   }
 
-  ui.setStatus(
-    "Autorizza il microfono per continuare…"
-  );
+  ui.setStatus("Richiesta autorizzazione microfono…");
 
-  microphonePreparationPromise =
-    audioManager
-      .start()
-      .then(() => {
-        ui.setStatus(
-          audioManager.fakeMode
-            ? "Microfono non disponibile — modalità fake pronta"
-            : "Microfono autorizzato — premi START"
-        );
-      })
-      .catch((error) => {
-        console.error(error);
-
-        microphonePreparationPromise = null;
-
-        ui.setStatus(
-          error instanceof Error
-            ? error.message
-            : "Errore durante l’attivazione del microfono."
-        );
-
-        throw error;
-      });
+  microphonePreparationPromise = audioManager
+    .start()
+    .then(() => {
+      ui.setStatus(
+        audioManager.fakeMode
+          ? "Microfono non disponibile — avvio senza microfono"
+          : "Microfono autorizzato"
+      );
+    })
+    .catch((error) => {
+      console.warn("Microfono non disponibile, continuo senza bloccare.", error);
+      microphonePreparationPromise = null;
+      audioManager.enableFakeMode();
+    });
 
   return microphonePreparationPromise;
 }
 
-/* =========================================================
-   AVVIO ESPERIENZA
-   ========================================================= */
-
 async function startExperience() {
-  if (started) {
-    return;
-  }
+  if (started) return;
 
   ui.setStartButtonDisabled(true);
-  ui.setStatus(
-    "Attivazione del microfono…"
-  );
+  ui.setStatus("Avvio della performance…");
 
   try {
+    // AudioContext e richiesta microfono partono solo qui, dentro il click dell'utente.
     await prepareMicrophone();
 
     if (
       audioManager.audioContext &&
-      audioManager.audioContext.state ===
-        "suspended"
+      audioManager.audioContext.state === "suspended"
     ) {
       await audioManager.audioContext.resume();
     }
 
-    ui.setStatus(
-      "Avvio della performance…"
-    );
-
     started = true;
-
     sceneManager.setStarted(true);
+    lastSoundTime = performance.now();
 
-    lastSoundTime =
-      performance.now();
+    await sceneManager.load(sceneManager.currentIndex);
 
-    await sceneManager.load(
-      sceneManager.currentIndex
-    );
-
-    ui.setStatus(
-      `Audio: ${audioManager.sourceMode}`
-    );
-
-    performanceMonitor.publish(
-      {
-        level: 0,
-        bass: 0,
-        mid: 0,
-        high: 0
-      },
-      true
-    );
-
+    ui.setStatus(`Audio: ${audioManager.sourceMode}`);
+    performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
     ui.hideStartScreen();
 
-    document.documentElement
-      .requestFullscreen()
-      .catch(() => {});
+    document.documentElement.requestFullscreen().catch(() => {});
   } catch (error) {
     console.error(error);
-
     started = false;
-
     ui.setStatus(
-      error instanceof Error
-        ? error.message
-        : "Errore durante l'avvio."
+      error instanceof Error ? error.message : "Errore durante l'avvio."
     );
-
     ui.setStartButtonDisabled(false);
   }
 }
 
-/* =========================================================
-   AUDIO REACTIVITY
-   ========================================================= */
-
 function toggleAudioReactive() {
-  audioReactiveEnabled =
-    !audioReactiveEnabled;
-
-  ui.setAudioReactiveState(
-    audioReactiveEnabled
-  );
-
+  audioReactiveEnabled = !audioReactiveEnabled;
+  ui.setAudioReactiveState(audioReactiveEnabled);
   ui.setStatus(
     audioReactiveEnabled
       ? "Audio reactivity attiva"
@@ -408,95 +242,35 @@ function toggleAudioReactive() {
   );
 }
 
-/* =========================================================
-   MICROFONO / CUE / FAKE
-   ========================================================= */
-
 async function toggleMicrophoneMode() {
   try {
-    if (
-      audioManager.sourceMode !==
-      "microphone"
-    ) {
-      ui.setStatus(
-        "Attivazione del microfono…"
-      );
-
+    if (audioManager.sourceMode !== "microphone") {
+      ui.setStatus("Attivazione del microfono…");
       microphonePreparationPromise = null;
-
       await prepareMicrophone();
     } else {
       await audioManager.activateCueOrFake();
     }
 
-    ui.setStatus(
-      `Audio: ${audioManager.sourceMode}`
-    );
-
-    performanceMonitor.publish(
-      {
-        level: 0,
-        bass: 0,
-        mid: 0,
-        high: 0
-      },
-      true
-    );
+    ui.setStatus(`Audio: ${audioManager.sourceMode}`);
+    performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
   } catch (error) {
     console.error(error);
-
-    ui.setStatus(
-      error instanceof Error
-        ? error.message
-        : "Errore audio."
-    );
+    ui.setStatus(error instanceof Error ? error.message : "Errore audio.");
   }
 }
 
-/* =========================================================
-   COLLEGAMENTO UI
-   ========================================================= */
+ui.onStart(startExperience);
+ui.onNextVideo(() => sceneManager.next());
+ui.onPreviousVideo(() => sceneManager.previous());
+ui.onSelectVideo((index) => sceneManager.select(index));
+ui.onToggleAudioReactive(toggleAudioReactive);
+ui.onToggleMicrophoneMode(toggleMicrophoneMode);
+ui.onRestartVideo(() => sceneManager.restart());
+ui.setAudioReactiveState(audioReactiveEnabled);
 
-ui.onStart(
-  startExperience
-);
+performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
 
-ui.onNextVideo(
-  () => sceneManager.next()
-);
-
-ui.onPreviousVideo(
-  () => sceneManager.previous()
-);
-
-ui.onSelectVideo(
-  (index) => sceneManager.select(index)
-);
-
-ui.onToggleAudioReactive(
-  toggleAudioReactive
-);
-
-ui.onToggleMicrophoneMode(
-  toggleMicrophoneMode
-);
-
-ui.onRestartVideo(
-  () => sceneManager.restart()
-);
-
-ui.setAudioReactiveState(
-  audioReactiveEnabled
-);
-
-performanceMonitor.publish(
-  {
-    level: 0,
-    bass: 0,
-    mid: 0,
-    high: 0
-  },
-  true
-);
-
-prepareMicrophone();
+// Non avviare AudioContext o getUserMedia al caricamento della pagina:
+// Chrome li consente soltanto dopo un gesto esplicito dell'utente.
+ui.setStatus("Premi AVVIA per iniziare e autorizzare il microfono.");
