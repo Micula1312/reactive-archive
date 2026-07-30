@@ -46,11 +46,11 @@ export default class AudioManager {
     }
   }
 
-  async start() {
+  async start({ fallbackPlay = false } = {}) {
     await this.ensureContext();
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      return this.activateCueOrFake();
+      return this.activateCueOrFake({ play: fallbackPlay });
     }
 
     try {
@@ -68,11 +68,11 @@ export default class AudioManager {
       this.fakeMode = false;
     } catch (error) {
       console.warn(
-        "Microfono non disponibile. Uso la traccia della cue o il segnale generativo.",
+        "Microfono non disponibile. La performance userà la traccia audio della scena.",
         error
       );
 
-      await this.activateCueOrFake();
+      await this.activateCueOrFake({ play: fallbackPlay });
     }
   }
 
@@ -115,10 +115,10 @@ export default class AudioManager {
     }
   }
 
-  async activateCueOrFake() {
+  async activateCueOrFake({ play = true } = {}) {
     if (this.cueTrack) {
       await this.setCueTrack(this.cueTrack, {
-        play: true,
+        play,
         audible: true,
         activate: true
       });
