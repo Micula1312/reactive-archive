@@ -62,6 +62,21 @@ const sceneManager = new SceneManager({
   performance: performanceScore
 });
 
+const timeline = performanceScore.timeline?.useAsClock
+  ? performanceScore.timeline
+  : null;
+
+function parseTimecode(value) {
+  if (typeof value === "number") return value;
+  const parts = String(value ?? "0").split(":").map(Number);
+  if (parts.some((part) => !Number.isFinite(part))) return 0;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return parts[0] || 0;
+}
+
+const sceneStartTimes = performanceScore.scenes.map((scene) => parseTimecode(scene.start));
+
 let blackoutActive = false;
 let audioReactiveEnabled = true;
 let started = false;
@@ -70,6 +85,7 @@ let microphoneAvailable = false;
 let soloMicEnabled = false;
 let audioFileSyncEnabled = false;
 let automaticFallbackActive = false;
+let timelineSceneLoading = false;
 let visualVisibility = performanceScore.minimumVisibility ?? 0.32;
 let lastSoundTime = performance.now();
 
@@ -90,13 +106,40 @@ function setBlackout(active) {
 }
 
 function configurePlaybackMode() {
+  if (timeline) {
+    audioFileSyncEnabled = !soloMicEnabled;
+    automaticFallbackActive = false;
+    sceneManager.setAutomaticMode(false);
+    return;
+  }
+
   audioFileSyncEnabled = !soloMicEnabled && !microphoneAvailable;
   automaticFallbackActive =
     audioFileSyncEnabled && performanceScore.automaticFallback !== false;
   sceneManager.setAutomaticMode(automaticFallbackActive);
 }
 
+async function ensureTimelineAudio({ restart = false } = {}) {
+  if (!timeline?.audio) return;
+
+  const sameTrack = audioManager.cueTrack === timeline.audio;
+  await audioManager.setCueTrack(timeline.audio, {
+    play: started || timeline.autoplay !== false,
+    audible: !audioManager.outputMuted && !soloMicEnabled,
+    activate: !soloMicEnabled,
+    forceActivate: !soloMicEnabled,
+    restart: restart || !sameTrack
+  });
+
+  if (timeline.loop) audioManager.cueAudio.loop = true;
+}
+
 async function applyCurrentSceneAudio({ restart = true } = {}) {
+  if (timeline) {
+    await ensureTimelineAudio({ restart: false });
+    return;
+  }
+
   const scene = sceneManager.currentScene;
 
   if (soloMicEnabled) {
@@ -122,7 +165,13 @@ async function setSoloMic(active) {
   soloMicEnabled = Boolean(active);
 
   if (soloMicEnabled) {
-    audioManager.stopCue({ reset: true });
+    if (timeline) {
+      audioManager.disconnectCueOutput();
+      audioManager.cueAudio.play().catch(() => {});
+    } else {
+      audioManager.stopCue({ reset: true });
+    }
+
     microphonePreparationPromise = null;
     microphoneAvailable = await prepareMicrophone();
     audioFileSyncEnabled = false;
@@ -130,17 +179,17 @@ async function setSoloMic(active) {
     sceneManager.setAutomaticMode(false);
     ui.setStatus(
       microphoneAvailable
-        ? "SOLO MIC — file audio esclusi"
+        ? "SOLO MIC — timeline continua silenziosa"
         : "SOLO MIC — microfono non disponibile"
     );
   } else {
     configurePlaybackMode();
-    await applyCurrentSceneAudio({ restart: false });
-    ui.setStatus(
-      microphoneAvailable
-        ? "MIC attivo — fallback file disponibile"
-        : "AUTO — audio della scena"
-    );
+    if (timeline) {
+      await ensureTimelineAudio({ restart: false });
+    } else {
+      await applyCurrentSceneAudio({ restart: false });
+    }
+    ui.setStatus(timeline ? "TRACK — timeline e audioreattività" : "Modalità automatica");
   }
 
   return soloMicEnabled;
@@ -174,9 +223,32 @@ function animate() {
 }
 animate();
 
+async function syncSceneToTimeline() {
+  if (!timeline || timelineSceneLoading || audioManager.cueAudio.paused) return;
+
+  const currentTime = audioManager.cueAudio.currentTime;
+  let targetIndex = 0;
+
+  for (let index = 0; index < sceneStartTimes.length; index += 1) {
+    if (currentTime >= sceneStartTimes[index]) targetIndex = index;
+    else break;
+  }
+
+  if (targetIndex === sceneManager.currentIndex) return;
+
+  timelineSceneLoading = true;
+  try {
+    await sceneManager.load(targetIndex);
+  } finally {
+    timelineSceneLoading = false;
+  }
+}
+
 function updateAudio() {
   requestAnimationFrame(updateAudio);
   if (!started) return;
+
+  syncSceneToTimeline().catch(console.error);
 
   const audioData = audioManager.update();
   const scene = sceneManager.currentScene;
@@ -184,10 +256,10 @@ function updateAudio() {
   if (!scene) return;
 
   const shouldReact = audioReactiveEnabled && (scene.audioReactive ?? true);
-  const silenceThreshold = scene.silenceThreshold ?? 0.035;
-  const silenceDelay = scene.silenceDelay ?? 500;
-  const fadeInSpeed = scene.fadeInSpeed ?? 0.12;
-  const fadeOutSpeed = scene.fadeOutSpeed ?? 0.035;
+  const silenceThreshold = scene.silenceThreshold ?? 0.025;
+  const silenceDelay = scene.silenceDelay ?? 350;
+  const fadeInSpeed = scene.fadeInSpeed ?? 0.18;
+  const fadeOutSpeed = scene.fadeOutSpeed ?? 0.045;
   const minimumVisibility = Math.max(
     0.05,
     Math.min(1, scene.minimumVisibility ?? performanceScore.minimumVisibility ?? 0.28)
@@ -250,7 +322,9 @@ async function startExperience() {
   ui.setStatus("Avvio della performance…");
 
   try {
-    microphoneAvailable = await prepareMicrophone();
+    if (!timeline || timeline.reactiveSource !== "track") {
+      microphoneAvailable = await prepareMicrophone();
+    }
 
     if (audioManager.audioContext?.state === "suspended") {
       await audioManager.audioContext.resume();
@@ -260,12 +334,19 @@ async function startExperience() {
     started = true;
     sceneManager.setStarted(true);
     lastSoundTime = performance.now();
-    await sceneManager.load(sceneManager.currentIndex);
+
+    if (timeline) {
+      await ensureTimelineAudio({ restart: true });
+    }
+
+    await sceneManager.load(0);
 
     ui.setStatus(
-      microphoneAvailable
-        ? "LIVE — audioreattività dal microfono"
-        : "AUTO — traccia scena + audioreattività"
+      timeline
+        ? "TIMELINE 15:00 — audioreattività dalla traccia"
+        : microphoneAvailable
+          ? "LIVE — audioreattività dal microfono"
+          : "AUTO — traccia scena + audioreattività"
     );
 
     performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
@@ -274,7 +355,7 @@ async function startExperience() {
   } catch (error) {
     console.error(error);
     started = false;
-    ui.setStatus(error instanceof Error ? error.message : "Errore durante l'avvio.");
+    ui.setStatus(error instanceof Error ? error.message : "Errore durante l’avvio.");
     ui.setStartButtonDisabled(false);
   }
 }
@@ -297,7 +378,7 @@ async function toggleMicrophoneMode() {
   ui.setStatus(
     microphoneAvailable
       ? "Audioreattività dal microfono"
-      : "Audioreattività dalla traccia della scena"
+      : "Audioreattività dalla traccia"
   );
   performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
 }
@@ -318,4 +399,4 @@ ui.onRestartVideo(() => sceneManager.restart());
 ui.setAudioReactiveState(audioReactiveEnabled);
 
 performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
-ui.setStatus("Premi AVVIA: microfono se disponibile, altrimenti audio della scena.");
+ui.setStatus(timeline ? "Premi AVVIA: test timeline da 15 minuti." : "Premi AVVIA.");
