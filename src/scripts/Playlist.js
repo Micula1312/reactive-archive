@@ -8,14 +8,44 @@ const performance =
   document.body?.dataset.performance ||
   (window.location.pathname.endsWith("/elisa") ? "elisa" : "fmcp");
 
+// FMCP — nuova partitura concordata con il musicista.
+// Restano esclusi OMM e AS THE PIG.
 const fmcpPlaylist = [
   {
-    title: "Video 01",
-    src: "/reactive-archive/video-01.mp4"
+    title: "AI — ALBERI",
+    audio: "AI",
+    visual: "ALBERI",
+    src: "/reactive-archive/FMCP_visuals_ALBERI.mp4"
   },
   {
-    title: "Video 02",
-    src: "/reactive-archive/video-02.mp4"
+    title: "FORESTA — PALO LUCE / SEDIE",
+    audio: "FORESTA",
+    visual: "NO TITLE",
+    src: "/reactive-archive/FMCP_visuals_NO TITLE.mp4"
+  },
+  {
+    title: "BRUTALISMO — CIELO / NUVOLE",
+    audio: "BRUTALISMO",
+    visual: "FORESTA",
+    src: "/reactive-archive/FMCP_visuals_FORESTA.mp4"
+  },
+  {
+    title: "INDIA — DRIVING CAR B/W",
+    audio: "INDIA",
+    visual: "INDIA IS RIGHT",
+    src: "/reactive-archive/FMCP_visuals_INDIA IS RIGHT.mp4"
+  },
+  {
+    title: "DISTORTO — GENTE / CITTÀ B/W",
+    audio: "DISTORTO",
+    visual: "DISTORTO",
+    src: "/reactive-archive/FMCP_visuals_DISTORTO.mp4"
+  },
+  {
+    title: "MONTAGNA — MONTAGNA B/W",
+    audio: "MONTAGNA",
+    visual: "DARK",
+    src: "/reactive-archive/FMCP_visuals_DARK.mp4"
   }
 ];
 
