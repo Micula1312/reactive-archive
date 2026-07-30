@@ -64,7 +64,9 @@ export default class Renderer {
       glitch: 1,
       "glitch-vertical": 1,
       "soft-gradient": 2,
-      defocus: 3
+      defocus: 3,
+      invert: 4,
+      "invert-slash": 4
     };
 
     this.uniforms.uEffectMode.value = effectModes[preset] ?? 0;
