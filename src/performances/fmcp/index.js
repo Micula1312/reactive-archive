@@ -1,4 +1,7 @@
-const base = `${import.meta.env.BASE_URL}fmcp`;
+const publicBase = import.meta.env.BASE_URL.endsWith("/")
+  ? import.meta.env.BASE_URL
+  : `${import.meta.env.BASE_URL}/`;
+const base = `${publicBase}fmcp`;
 
 const fmcp = {
   id: "fmcp",
