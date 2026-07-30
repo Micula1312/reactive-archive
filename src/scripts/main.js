@@ -66,7 +66,7 @@ let blackoutActive = false;
 let audioReactiveEnabled = true;
 let started = false;
 let microphonePreparationPromise = null;
-let visualVisibility = 0;
+let visualVisibility = 1;
 let lastSoundTime = performance.now();
 let automaticFallbackActive = false;
 
@@ -74,6 +74,10 @@ let audioFileSyncEnabled =
   typeof performanceScore.audioFileSync === "boolean"
     ? performanceScore.audioFileSync
     : !["microphone-first", "microphone-or-auto"].includes(performanceScore.audioPolicy);
+
+function performanceHasAudio() {
+  return performanceScore.scenes?.some((scene) => Boolean(scene.audio));
+}
 
 function setBlackout(active) {
   blackoutActive = active;
@@ -126,6 +130,13 @@ window.addEventListener("reactive-archive:scene-change", async (event) => {
   const scene = event.detail?.scene;
   subtitleManager.setScene(scene);
 
+  // Ogni nuova scena deve essere subito visibile, anche se il file audio
+  // contiene un'introduzione silenziosa o il microfono non riceve ancora segnale.
+  visualVisibility = 1;
+  lastSoundTime = performance.now();
+  canvas.style.opacity = "1";
+  visualRenderer.setVisibility(1);
+
   if (scene && Object.prototype.hasOwnProperty.call(scene, "audio")) {
     await audioManager.setCueTrack(scene.audio, {
       play: started && audioFileSyncEnabled,
@@ -154,7 +165,7 @@ function updateAudio() {
 
   const shouldReact = audioReactiveEnabled && (scene.audioReactive ?? true);
   const silenceThreshold = scene.silenceThreshold ?? 0.035;
-  const silenceDelay = scene.silenceDelay ?? 350;
+  const silenceDelay = scene.silenceDelay ?? 1200;
   const fadeInSpeed = scene.fadeInSpeed ?? 0.12;
   const fadeOutSpeed = scene.fadeOutSpeed ?? 0.025;
 
@@ -194,7 +205,7 @@ function prepareMicrophone() {
       ui.setStatus(
         audioManager.sourceMode === "microphone"
           ? "Microfono autorizzato"
-          : "Microfono non disponibile — modalità automatica"
+          : "Microfono non disponibile — uso delle tracce audio"
       );
     })
     .catch((error) => {
@@ -208,17 +219,29 @@ function prepareMicrophone() {
 
 function configurePlaybackMode() {
   const microphoneAvailable = audioManager.sourceMode === "microphone";
+  const hasAudio = performanceHasAudio();
+
+  // Regola comune a tutte le performance:
+  // - con microfono: l'analyser usa il microfono e i file rispettano la policy;
+  // - senza microfono: le tracce dichiarate diventano automaticamente sorgente
+  //   sonora e audioreattiva, evitando una performance nera e muta.
+  if (!microphoneAvailable && hasAudio) {
+    audioFileSyncEnabled = true;
+  } else if (
+    microphoneAvailable &&
+    ["microphone-first", "microphone-or-auto"].includes(performanceScore.audioPolicy)
+  ) {
+    audioFileSyncEnabled = false;
+  }
+
   const useAutomaticFallback =
-    performanceScore.audioPolicy === "microphone-or-auto" &&
+    !microphoneAvailable &&
+    hasAudio &&
     performanceScore.automaticFallback !== false &&
-    !microphoneAvailable;
+    (performanceScore.audioPolicy === "microphone-or-auto" || performanceScore.automaticFallback === true);
 
   automaticFallbackActive = useAutomaticFallback;
   sceneManager.setAutomaticMode(useAutomaticFallback);
-
-  if (performanceScore.audioPolicy === "microphone-or-auto") {
-    audioFileSyncEnabled = !microphoneAvailable;
-  }
 }
 
 async function startExperience() {
@@ -237,15 +260,16 @@ async function startExperience() {
     configurePlaybackMode();
     started = true;
     sceneManager.setStarted(true);
+    visualVisibility = 1;
     lastSoundTime = performance.now();
     await sceneManager.load(sceneManager.currentIndex);
 
     ui.setStatus(
       automaticFallbackActive
-        ? "AUTO — audio file + sequenza scene"
+        ? "AUTO — tracce audio + sequenza scene"
         : audioFileSyncEnabled
-          ? `Audio: ${audioManager.sourceMode} + file sync`
-          : `LIVE — audio dal ${audioManager.sourceMode}`
+          ? `Audio file attivo — sorgente ${audioManager.sourceMode}`
+          : "LIVE — audio dal microfono"
     );
 
     performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
@@ -280,10 +304,23 @@ async function toggleMicrophoneMode() {
     }
 
     configurePlaybackMode();
+
+    // Se si passa manualmente alla modalità senza microfono, avvia subito
+    // la traccia della scena corrente quando disponibile.
+    if (started && audioFileSyncEnabled && sceneManager.currentScene?.audio) {
+      await audioManager.setCueTrack(sceneManager.currentScene.audio, {
+        play: true,
+        audible: sceneManager.currentScene.audioAudible ?? true,
+        forceActivate: audioManager.sourceMode !== "microphone"
+      });
+    }
+
     ui.setStatus(
       automaticFallbackActive
-        ? "AUTO — audio file + sequenza scene"
-        : `Audio: ${audioManager.sourceMode}`
+        ? "AUTO — tracce audio + sequenza scene"
+        : audioFileSyncEnabled
+          ? "Audio file attivo"
+          : "LIVE — audio dal microfono"
     );
     performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
   } catch (error) {
@@ -308,4 +345,4 @@ ui.onRestartVideo(() => sceneManager.restart());
 ui.setAudioReactiveState(audioReactiveEnabled);
 
 performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
-ui.setStatus("Premi AVVIA: microfono = LIVE, senza microfono = AUTO.");
+ui.setStatus("Premi AVVIA: microfono = LIVE, senza microfono = tracce audio.");
