@@ -78,7 +78,12 @@ export default class AudioManager {
 
   async setCueTrack(
     src,
-    { play = true, audible = true, activate = true } = {}
+    {
+      play = true,
+      audible = true,
+      activate = true,
+      forceActivate = false
+    } = {}
   ) {
     this.cueTrack = src || null;
     this.cueAudio.pause();
@@ -98,6 +103,14 @@ export default class AudioManager {
 
     if (!this.cueSource) {
       this.cueSource = this.audioContext.createMediaElementSource(this.cueAudio);
+    }
+
+    // Se il microfono è autorizzato, la cue viene soltanto precaricata:
+    // non deve sostituire né ostacolare il segnale live.
+    const keepMicrophone = this.mode === "microphone" && !forceActivate;
+
+    if (keepMicrophone) {
+      return;
     }
 
     if (activate) {
@@ -120,7 +133,8 @@ export default class AudioManager {
       await this.setCueTrack(this.cueTrack, {
         play,
         audible: true,
-        activate: true
+        activate: true,
+        forceActivate: true
       });
       return;
     }
