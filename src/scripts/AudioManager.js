@@ -2,16 +2,20 @@ export default class AudioManager {
   constructor() {
     this.audioContext = null;
     this.analyser = null;
+    this.outputGain = null;
     this.stream = null;
+    this.microphoneSource = null;
     this.sourceNode = null;
+
     this.cueAudio = new Audio();
     this.cueAudio.preload = "auto";
     this.cueAudio.crossOrigin = "anonymous";
     this.cueSource = null;
-    this.cueOutputConnected = false;
     this.cueTrack = null;
+
     this.mode = "idle";
     this.fakeMode = false;
+    this.outputMuted = false;
     this.timeData = null;
     this.frequencyData = null;
     this.level = 0;
@@ -32,69 +36,77 @@ export default class AudioManager {
       this.timeData = new Uint8Array(this.analyser.fftSize);
       this.frequencyData = new Uint8Array(this.analyser.frequencyBinCount);
     }
+
+    if (!this.outputGain) {
+      this.outputGain = this.audioContext.createGain();
+      this.outputGain.gain.value = this.outputMuted ? 0 : 1;
+      this.outputGain.connect(this.audioContext.destination);
+    }
   }
 
-  connectSource(source, { audible = false } = {}) {
+  disconnectAnalyserSource() {
     try {
-      this.sourceNode?.disconnect();
+      this.sourceNode?.disconnect(this.analyser);
     } catch {}
+    this.sourceNode = null;
+  }
 
+  connectAnalyserSource(source) {
+    this.disconnectAnalyserSource();
     this.sourceNode = source;
     source.connect(this.analyser);
+  }
 
-    if (audible) {
-      source.connect(this.audioContext.destination);
+  ensureCueGraph() {
+    if (!this.cueSource) {
+      this.cueSource = this.audioContext.createMediaElementSource(this.cueAudio);
+      this.cueSource.connect(this.outputGain);
     }
   }
 
-  ensureCueOutput() {
-    if (!this.cueSource || !this.audioContext || this.cueOutputConnected) {
-      return;
+  setOutputMuted(muted) {
+    this.outputMuted = Boolean(muted);
+    if (this.outputGain && this.audioContext) {
+      this.outputGain.gain.setTargetAtTime(
+        this.outputMuted ? 0 : 1,
+        this.audioContext.currentTime,
+        0.015
+      );
     }
-
-    this.cueSource.connect(this.audioContext.destination);
-    this.cueOutputConnected = true;
-  }
-
-  disconnectCueOutput() {
-    if (!this.cueSource || !this.cueOutputConnected) {
-      return;
-    }
-
-    try {
-      this.cueSource.disconnect(this.audioContext.destination);
-    } catch {}
-
-    this.cueOutputConnected = false;
+    return this.outputMuted;
   }
 
   async start({ fallbackPlay = false } = {}) {
     await this.ensureContext();
 
     if (!navigator.mediaDevices?.getUserMedia) {
-      return this.activateCueOrFake({ play: fallbackPlay });
+      await this.activateCueOrFake({ play: fallbackPlay });
+      return false;
     }
 
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({
-        audio: true,
-        video: false
-      });
+      if (!this.stream) {
+        this.stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false
+        });
+      }
 
-      this.connectSource(
-        this.audioContext.createMediaStreamSource(this.stream),
-        { audible: false }
-      );
+      if (!this.microphoneSource) {
+        this.microphoneSource = this.audioContext.createMediaStreamSource(this.stream);
+      }
 
+      this.connectAnalyserSource(this.microphoneSource);
       this.mode = "microphone";
       this.fakeMode = false;
+      return true;
     } catch (error) {
       console.warn(
-        "Microfono non disponibile. La performance userà la traccia audio della scena.",
+        "Microfono non disponibile. Uso la traccia audio della scena quando presente.",
         error
       );
-
       await this.activateCueOrFake({ play: fallbackPlay });
+      return false;
     }
   }
 
@@ -104,54 +116,38 @@ export default class AudioManager {
       play = true,
       audible = true,
       activate = true,
-      forceActivate = false
+      forceActivate = false,
+      restart = true
     } = {}
   ) {
-    this.cueTrack = src || null;
-    this.cueAudio.pause();
-    this.cueAudio.currentTime = 0;
+    const nextTrack = src || null;
+    const trackChanged = nextTrack !== this.cueTrack;
+    this.cueTrack = nextTrack;
 
-    if (!src) {
+    if (!nextTrack) {
+      this.stopCue({ reset: true });
       if (this.mode === "cue") this.enableFakeMode();
       return;
     }
 
-    this.cueAudio.src = src;
-    this.cueAudio.muted = !audible;
-    this.cueAudio.volume = 1;
-    this.cueAudio.load();
-
     await this.ensureContext();
+    this.ensureCueGraph();
 
-    if (!this.cueSource) {
-      this.cueSource = this.audioContext.createMediaElementSource(this.cueAudio);
+    if (trackChanged) {
+      this.cueAudio.pause();
+      this.cueAudio.src = nextTrack;
+      this.cueAudio.load();
     }
+
+    if (restart && (trackChanged || this.cueAudio.ended)) {
+      try { this.cueAudio.currentTime = 0; } catch {}
+    }
+
+    this.cueAudio.volume = audible ? 1 : 0;
 
     const keepMicrophone = this.mode === "microphone" && !forceActivate;
-
-    if (keepMicrophone) {
-      // Il microfono continua ad alimentare l'analyser, mentre la traccia
-      // della scena viene comunque inviata alle casse.
-      if (audible) {
-        this.ensureCueOutput();
-      } else {
-        this.disconnectCueOutput();
-      }
-
-      if (play) {
-        try {
-          await this.cueAudio.play();
-        } catch (error) {
-          console.warn("Traccia cue non riproducibile:", error);
-        }
-      }
-
-      return;
-    }
-
-    if (activate) {
-      this.disconnectCueOutput();
-      this.connectSource(this.cueSource, { audible });
+    if (activate && !keepMicrophone) {
+      this.connectAnalyserSource(this.cueSource);
       this.mode = "cue";
       this.fakeMode = false;
     }
@@ -165,13 +161,21 @@ export default class AudioManager {
     }
   }
 
+  stopCue({ reset = false } = {}) {
+    this.cueAudio.pause();
+    if (reset) {
+      try { this.cueAudio.currentTime = 0; } catch {}
+    }
+  }
+
   async activateCueOrFake({ play = true } = {}) {
     if (this.cueTrack) {
       await this.setCueTrack(this.cueTrack, {
         play,
         audible: true,
         activate: true,
-        forceActivate: true
+        forceActivate: true,
+        restart: false
       });
       return;
     }
@@ -180,10 +184,10 @@ export default class AudioManager {
   }
 
   enableFakeMode() {
+    this.disconnectAnalyserSource();
     this.mode = "fake";
     this.fakeMode = true;
     this.fakeStartTime = performance.now();
-    this.cueAudio.pause();
   }
 
   disableFakeMode() {
@@ -205,17 +209,12 @@ export default class AudioManager {
     this.analyser.getByteFrequencyData(this.frequencyData);
 
     let sum = 0;
-
     for (let i = 0; i < this.timeData.length; i += 1) {
       const value = (this.timeData[i] - 128) / 128;
       sum += value * value;
     }
 
-    const rawLevel = Math.min(
-      Math.sqrt(sum / this.timeData.length) * 6,
-      1
-    );
-
+    const rawLevel = Math.min(Math.sqrt(sum / this.timeData.length) * 6, 1);
     this.level += (rawLevel - this.level) * 0.15;
     this.bass += (this.getFrequencyAverage(20, 250) - this.bass) * 0.15;
     this.mid += (this.getFrequencyAverage(250, 2500) - this.mid) * 0.12;
@@ -238,8 +237,7 @@ export default class AudioManager {
     const targetBass = bassPulse * 0.8 + slowBreath * 0.15;
     const targetMid = midWave * 0.55 + bassPulse * 0.15;
     const targetHigh = highNoise + bassPulse * 0.2;
-    const targetLevel =
-      targetBass * 0.55 + targetMid * 0.3 + targetHigh * 0.15;
+    const targetLevel = targetBass * 0.55 + targetMid * 0.3 + targetHigh * 0.15;
 
     this.bass += (targetBass - this.bass) * 0.18;
     this.mid += (targetMid - this.mid) * 0.12;
@@ -255,9 +253,7 @@ export default class AudioManager {
   }
 
   getFrequencyAverage(minimumFrequency, maximumFrequency) {
-    if (!this.audioContext || !this.analyser || !this.frequencyData) {
-      return 0;
-    }
+    if (!this.audioContext || !this.analyser || !this.frequencyData) return 0;
 
     const nyquist = this.audioContext.sampleRate / 2;
     const minimumIndex = Math.max(
@@ -271,7 +267,6 @@ export default class AudioManager {
 
     let sum = 0;
     let count = 0;
-
     for (let i = minimumIndex; i <= maximumIndex; i += 1) {
       sum += this.frequencyData[i];
       count += 1;
