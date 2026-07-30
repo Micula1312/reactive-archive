@@ -1,5 +1,6 @@
 import TextScene from "./scenes/TextScene.js";
 import HydraScene from "./scenes/HydraScene.js";
+import { getSceneControls, writeTarget } from "./LiveControls.js";
 
 export default class SceneManager {
   constructor({ video, renderer, ui, performance }) {
@@ -20,6 +21,7 @@ export default class SceneManager {
 
   get scenes() { return this.performance.scenes; }
   get currentScene() { return this.scenes[this.currentIndex]; }
+  get currentControls() { return getSceneControls(this.currentScene); }
   setStarted(started) { this.started = Boolean(started); }
 
   clearSceneTimer() {
@@ -60,6 +62,26 @@ export default class SceneManager {
     if (scene.type === "text") return new TextScene(context);
     if (scene.type === "hydra") return new HydraScene(context);
     return null;
+  }
+
+  setParameter(key, rawValue) {
+    const scene = this.currentScene;
+    const control = this.currentControls.find((item) => item.key === key);
+    if (!scene || !control) return false;
+
+    const numericValue = Number(rawValue);
+    if (!Number.isFinite(numericValue)) return false;
+    const value = Math.max(control.min, Math.min(control.max, numericValue));
+
+    writeTarget(scene, control.target, value);
+
+    if (scene.type === "video") {
+      this.renderer.setEffect(scene.filter ?? {});
+      this.renderer.setReactivity(scene.reactivity ?? 1);
+    }
+
+    this.currentController?.setParameter?.(key, value, control);
+    return true;
   }
 
   scheduleAutomaticNext(scene) {
