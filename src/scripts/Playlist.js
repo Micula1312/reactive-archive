@@ -8,44 +8,49 @@ const performance =
   document.body?.dataset.performance ||
   (window.location.pathname.endsWith("/elisa") ? "elisa" : "fmcp");
 
-// FMCP — nuova partitura concordata con il musicista.
-// Restano esclusi OMM e AS THE PIG.
+// FMCP — partitura definitiva concordata con il musicista.
 const fmcpPlaylist = [
   {
-    title: "AI — ALBERI",
+    title: "AI — AI",
     audio: "AI",
-    visual: "ALBERI",
-    src: "/reactive-archive/FMCP_visuals_ALBERI.mp4"
+    visual: "AI",
+    src: "/reactive-archive/Fmcp_Visuals_Ai.mp4"
   },
   {
-    title: "FORESTA — PALO LUCE / SEDIE",
-    audio: "FORESTA",
+    title: "AS THE PIG — NO TITLE",
+    audio: "AS THE PIG",
     visual: "NO TITLE",
-    src: "/reactive-archive/FMCP_visuals_NO TITLE.mp4"
+    src: "/reactive-archive/FMCP_visuals_NO_TITLE.mp4"
   },
   {
-    title: "BRUTALISMO — CIELO / NUVOLE",
+    title: "FORESTA — NO TITLE 2",
+    audio: "FORESTA",
+    visual: "NO TITLE 2",
+    src: "/reactive-archive/Fmcp_Visuals_No_Title_2.mp4"
+  },
+  {
+    title: "BRUTALISMO — FORESTA",
     audio: "BRUTALISMO",
     visual: "FORESTA",
-    src: "/reactive-archive/FMCP_visuals_FORESTA.mp4"
+    src: "/reactive-archive/Fmcp_Visuals_Foresta.mp4"
   },
   {
-    title: "INDIA — DRIVING CAR B/W",
+    title: "INDIA — INDIA IS RIGHT",
     audio: "INDIA",
     visual: "INDIA IS RIGHT",
-    src: "/reactive-archive/FMCP_visuals_INDIA IS RIGHT.mp4"
+    src: "/reactive-archive/Fmcp_Visuals_India_Is_Right.mp4"
   },
   {
-    title: "DISTORTO — GENTE / CITTÀ B/W",
+    title: "DISTORTO — DISTORTO",
     audio: "DISTORTO",
     visual: "DISTORTO",
-    src: "/reactive-archive/FMCP_visuals_DISTORTO.mp4"
+    src: "/reactive-archive/Fmcp_Visuals_Distorto.mp4"
   },
   {
-    title: "MONTAGNA — MONTAGNA B/W",
+    title: "MONTAGNA — DK",
     audio: "MONTAGNA",
-    visual: "DARK",
-    src: "/reactive-archive/FMCP_visuals_DARK.mp4"
+    visual: "DK",
+    src: "/reactive-archive/Fmcp_Visuals_DK.mp4"
   }
 ];
 
