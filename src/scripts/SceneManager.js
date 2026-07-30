@@ -15,13 +15,19 @@ export default class SceneManager {
     this.started = false;
     this.currentController = null;
     this.sceneTimer = null;
+    this.paused = false;
+    this.videoSequence = [];
+    this.videoSequenceIndex = 0;
     this.handleResize = () => this.currentController?.resize?.();
+    this.handleVideoEnded = () => this.advanceVideoSequence().catch(console.error);
     window.addEventListener("resize", this.handleResize);
+    this.video.addEventListener("ended", this.handleVideoEnded);
   }
 
   get scenes() { return this.performance.scenes; }
   get currentScene() { return this.scenes[this.currentIndex]; }
   get currentControls() { return getSceneControls(this.currentScene); }
+  get isPaused() { return this.paused; }
   setStarted(started) { this.started = Boolean(started); }
 
   clearSceneTimer() {
@@ -38,23 +44,73 @@ export default class SceneManager {
     this.clearSceneTimer();
     await this.currentController?.exit?.();
     this.currentController = null;
+    this.videoSequence = [];
+    this.videoSequenceIndex = 0;
+    this.paused = false;
     document.querySelectorAll("[data-scene-layer]").forEach((element) => element.remove());
+  }
+
+  getSecondClipUrl(src) {
+    if (!src || /-2(?=\.[^.?#]+(?:[?#].*)?$)/i.test(src)) return null;
+    return src.replace(/(\.[^.?#]+)([?#].*)?$/, "-2$1$2");
+  }
+
+  async assetExists(src) {
+    if (!src) return false;
+    try {
+      const response = await fetch(src, { method: "HEAD", cache: "no-store" });
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  async buildVideoSequence(scene) {
+    const sequence = [scene.src];
+    const secondClip = scene.sequence?.[1] ?? scene.part2 ?? this.getSecondClipUrl(scene.src);
+
+    if (secondClip && await this.assetExists(secondClip)) {
+      sequence.push(secondClip);
+    }
+
+    return sequence;
+  }
+
+  async playVideoSource(src, { loop = false } = {}) {
+    this.video.pause();
+    this.video.src = src;
+    this.video.loop = loop;
+    this.video.currentTime = 0;
+    this.video.load();
+
+    if (this.started && !this.paused) {
+      try { await this.video.play(); }
+      catch (error) { console.error("Impossibile riprodurre la scena video:", error); }
+    }
+  }
+
+  async advanceVideoSequence() {
+    if (this.currentScene?.type !== "video") return;
+    if (this.videoSequenceIndex >= this.videoSequence.length - 1) return;
+
+    this.videoSequenceIndex += 1;
+    await this.playVideoSource(this.videoSequence[this.videoSequenceIndex], { loop: false });
   }
 
   async enterVideoScene(scene) {
     this.restoreVideoLayer();
-    this.video.pause();
-    this.video.src = scene.src;
-    this.video.loop = scene.loop ?? true;
+    this.paused = false;
     this.video.playbackRate = scene.playbackRate ?? 1;
-    this.video.load();
     this.renderer.setReactivity(scene.reactivity ?? 1);
     this.renderer.setEffect(scene.filter ?? {});
 
-    if (this.started) {
-      try { await this.video.play(); }
-      catch (error) { console.error("Impossibile riprodurre la scena video:", error); }
-    }
+    this.videoSequence = await this.buildVideoSequence(scene);
+    this.videoSequenceIndex = 0;
+    const hasSequence = this.videoSequence.length > 1;
+
+    await this.playVideoSource(this.videoSequence[0], {
+      loop: hasSequence ? false : (scene.loop ?? true)
+    });
   }
 
   createController(scene) {
@@ -82,6 +138,21 @@ export default class SceneManager {
 
     this.currentController?.setParameter?.(key, value, control);
     return true;
+  }
+
+  async togglePause(force) {
+    const nextPaused = typeof force === "boolean" ? force : !this.paused;
+    this.paused = nextPaused;
+
+    if (this.currentScene?.type === "video") {
+      if (nextPaused) {
+        this.video.pause();
+      } else if (this.started) {
+        await this.video.play().catch(console.error);
+      }
+    }
+
+    return this.paused;
   }
 
   scheduleAutomaticNext(scene) {
@@ -128,8 +199,10 @@ export default class SceneManager {
   update(audioData) { this.currentController?.update?.(audioData); }
   restart() {
     if (this.currentController?.restart) return this.currentController.restart();
-    this.video.currentTime = 0;
-    if (this.started) return this.video.play().catch(console.error);
-    return Promise.resolve();
+    this.videoSequenceIndex = 0;
+    const src = this.videoSequence[0] ?? this.currentScene?.src;
+    return this.playVideoSource(src, {
+      loop: this.videoSequence.length > 1 ? false : (this.currentScene?.loop ?? true)
+    });
   }
 }
