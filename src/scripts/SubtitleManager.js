@@ -20,37 +20,69 @@ export default class SubtitleManager {
       #performance-subtitles {
         position: fixed;
         left: 50%;
-        bottom: clamp(48px, 9vh, 120px);
+        bottom: clamp(34px, 7vh, 88px);
         z-index: 9998;
-        width: min(76vw, 1050px);
+        width: min(82vw, 980px);
         transform: translateX(-50%);
-        text-align: center;
         pointer-events: none;
         opacity: 0;
-        transition: opacity 900ms ease;
-        color: rgba(255, 255, 255, 0.96);
-        font-family: Arial, Helvetica, sans-serif;
-        font-size: clamp(22px, 2.1vw, 40px);
+        transition: opacity 420ms steps(4, end), transform 420ms ease;
+        color: rgba(235, 255, 245, 0.98);
+        font-family: "Lucida Console", "IBM Plex Mono", "Courier New", monospace;
+        font-size: clamp(18px, 1.65vw, 30px);
         font-weight: 400;
-        line-height: 1.34;
-        letter-spacing: 0.015em;
+        line-height: 1.45;
+        letter-spacing: 0.035em;
         white-space: pre-line;
-        text-wrap: balance;
-        text-shadow: 0 2px 22px rgba(0, 0, 0, 0.82);
+        text-shadow: 0 0 14px rgba(80, 255, 180, 0.26), 0 2px 16px rgba(0, 0, 0, 0.9);
       }
 
       #performance-subtitles.is-visible { opacity: 1; }
 
-      #performance-subtitles .subtitle-speaker {
-        display: block;
-        margin-bottom: 0.7em;
-        font-size: 0.34em;
-        letter-spacing: 0.2em;
-        text-transform: uppercase;
-        opacity: 0.62;
+      #performance-subtitles .subtitle-window {
+        position: relative;
+        display: inline-block;
+        max-width: min(72vw, 860px);
+        padding: 18px 22px 20px;
+        border: 1px solid rgba(190, 255, 225, 0.72);
+        background: rgba(2, 8, 7, 0.78);
+        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.52), inset 0 0 24px rgba(80, 255, 180, 0.035);
+        backdrop-filter: blur(5px);
+        text-align: left;
       }
 
+      #performance-subtitles[data-speaker="voice"] { text-align: left; }
+      #performance-subtitles[data-speaker="aicha"] { text-align: right; }
+
+      #performance-subtitles[data-speaker="aicha"] .subtitle-window {
+        border-color: rgba(255, 115, 125, 0.78);
+        color: rgba(255, 235, 238, 0.98);
+        text-shadow: 0 0 14px rgba(255, 60, 90, 0.24), 0 2px 16px rgba(0, 0, 0, 0.9);
+      }
+
+      #performance-subtitles .subtitle-speaker {
+        display: block;
+        margin-bottom: 0.85em;
+        padding-bottom: 0.55em;
+        border-bottom: 1px dashed currentColor;
+        font-size: 0.48em;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        opacity: 0.72;
+      }
+
+      #performance-subtitles .subtitle-speaker::before { content: "> "; }
       #performance-subtitles .subtitle-text { display: block; }
+      #performance-subtitles .subtitle-text::after {
+        content: "_";
+        margin-left: 0.12em;
+        animation: subtitle-cursor 1s steps(1, end) infinite;
+      }
+
+      @keyframes subtitle-cursor {
+        0%, 48% { opacity: 1; }
+        49%, 100% { opacity: 0; }
+      }
     `;
 
     document.head.appendChild(style);
@@ -62,8 +94,10 @@ export default class SubtitleManager {
     layer.setAttribute("aria-live", "polite");
     layer.setAttribute("aria-atomic", "true");
     layer.innerHTML = `
-      <span class="subtitle-speaker"></span>
-      <span class="subtitle-text"></span>
+      <span class="subtitle-window">
+        <span class="subtitle-speaker"></span>
+        <span class="subtitle-text"></span>
+      </span>
     `;
     document.body.appendChild(layer);
     return layer;
@@ -172,10 +206,11 @@ export default class SubtitleManager {
     this.pendingShowTimer = window.setTimeout(() => {
       this.pendingShowTimer = null;
       if (!this.enabled) return;
+      this.element.dataset.speaker = cue.speaker ?? "aicha";
       speakerElement.textContent = cue.label ?? this.formatSpeaker(cue.speaker);
       textElement.textContent = cue.text ?? "";
       this.element.classList.add("is-visible");
-    }, 360);
+    }, 220);
   }
 
   cancelPendingShow() {
