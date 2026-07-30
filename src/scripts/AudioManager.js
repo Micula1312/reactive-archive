@@ -8,6 +8,7 @@ export default class AudioManager {
     this.cueAudio.preload = "auto";
     this.cueAudio.crossOrigin = "anonymous";
     this.cueSource = null;
+    this.cueOutputConnected = false;
     this.cueTrack = null;
     this.mode = "idle";
     this.fakeMode = false;
@@ -44,6 +45,27 @@ export default class AudioManager {
     if (audible) {
       source.connect(this.audioContext.destination);
     }
+  }
+
+  ensureCueOutput() {
+    if (!this.cueSource || !this.audioContext || this.cueOutputConnected) {
+      return;
+    }
+
+    this.cueSource.connect(this.audioContext.destination);
+    this.cueOutputConnected = true;
+  }
+
+  disconnectCueOutput() {
+    if (!this.cueSource || !this.cueOutputConnected) {
+      return;
+    }
+
+    try {
+      this.cueSource.disconnect(this.audioContext.destination);
+    } catch {}
+
+    this.cueOutputConnected = false;
   }
 
   async start({ fallbackPlay = false } = {}) {
@@ -105,15 +127,30 @@ export default class AudioManager {
       this.cueSource = this.audioContext.createMediaElementSource(this.cueAudio);
     }
 
-    // Se il microfono è autorizzato, la cue viene soltanto precaricata:
-    // non deve sostituire né ostacolare il segnale live.
     const keepMicrophone = this.mode === "microphone" && !forceActivate;
 
     if (keepMicrophone) {
+      // Il microfono continua ad alimentare l'analyser, mentre la traccia
+      // della scena viene comunque inviata alle casse.
+      if (audible) {
+        this.ensureCueOutput();
+      } else {
+        this.disconnectCueOutput();
+      }
+
+      if (play) {
+        try {
+          await this.cueAudio.play();
+        } catch (error) {
+          console.warn("Traccia cue non riproducibile:", error);
+        }
+      }
+
       return;
     }
 
     if (activate) {
+      this.disconnectCueOutput();
       this.connectSource(this.cueSource, { audible });
       this.mode = "cue";
       this.fakeMode = false;
