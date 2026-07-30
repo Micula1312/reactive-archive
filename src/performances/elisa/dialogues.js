@@ -6,6 +6,16 @@ const cue = (time, end, text) => ({
 });
 
 export default {
+  // HYDRA 0 — i testi entrano quasi subito.
+  genesis: [
+    cue(2, 10, "Mi senti?"),
+    cue(13, 25, "Non cercare subito\nun'immagine."),
+    cue(29, 43, "Prima dell'immagine\nc'era una corrente."),
+    cue(48, 64, "Prima del nome\nc'era un corpo\nche cambiava forma."),
+    cue(69, 86, "Sono qui.\nNon dove mi stai cercando."),
+    cue(92, 112, "Guarda ancora.\nLascia che il nero\nimpari a respirare.")
+  ],
+
   // HYDRA I — 1'30"
   apparition: [
     cue(4, 13, "Mi senti?"),
