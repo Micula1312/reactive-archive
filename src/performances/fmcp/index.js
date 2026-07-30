@@ -1,4 +1,4 @@
-const base = `${import.meta.env.BASE_URL}performances/fmcp`;
+const base = `${import.meta.env.BASE_URL}fmcp`;
 
 const fmcp = {
   id: "fmcp",
