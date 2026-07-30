@@ -1,5 +1,6 @@
 ---
 const title = "Reactive Archive — Elisa";
+const fallbackVideo = `${import.meta.env.BASE_URL}elisa/videos/video-01.mp4`;
 ---
 
 <html lang="it" data-performance="elisa">
@@ -26,12 +27,12 @@ const title = "Reactive Archive — Elisa";
         <div class="start-panel">
           <p class="eyebrow">ELISA — AICHA KANDISHA</p>
           <h1>Reactive Archive</h1>
-          <p id="status">Autorizza il microfono per continuare.</p>
+          <p id="status">Premi AVVIA. Il microfono verrà richiesto senza bloccare la performance.</p>
           <button id="start-button" type="button">AVVIA</button>
         </div>
       </section>
 
-      <video id="source-video" src="/reactive-archive/video-01.mp4" muted loop playsinline preload="auto"></video>
+      <video id="source-video" src={fallbackVideo} muted loop playsinline preload="auto"></video>
     </main>
 
     <script>
