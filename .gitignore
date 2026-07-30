@@ -35,6 +35,7 @@ public/reactive-archive/*/videos/
 *.avi
 *.webm
 *.mp3
+!public/elisa/audio/elisa-definitiva-25min.mp3
 *.wav
 *.aif
 *.aiff
