@@ -5,30 +5,32 @@ import hydraModules from "./hydra/index.js";
 const baseUrl = import.meta.env.BASE_URL;
 
 function resolvePublicAsset(src) {
-  if (!src || /^(https?:|data:|blob:)/.test(src)) {
-    return src;
-  }
-
+  if (!src || /^(https?:|data:|blob:)/.test(src)) return src;
   return `${baseUrl}${src.replace(/^\//, "")}`;
 }
 
 export default {
   ...data,
-  // Con microfono: performance live, tutta la reattività arriva dal mic.
-  // Senza microfono: il motore abilita i file audio e avanza le scene in automatico.
-  audioPolicy: "microphone-or-auto",
-  mode: "manual",
-  automaticFallback: true,
-  scenes: data.scenes.map((scene, index) => ({
-    ...scene,
-    src: resolvePublicAsset(scene.src),
-    ...(index === 0
-      ? {
-          audio: `${baseUrl}elisa/audio/prima_parte.mp3`,
-          audioAudible: true
-        }
-      : {}),
-    text: scene.dialogue ? dialogues[scene.dialogue] : undefined,
-    patch: scene.module ? hydraModules[scene.module] : undefined
-  }))
+  audioPolicy: "timeline-track",
+  mode: "timeline",
+  automaticFallback: false,
+  timeline: data.timeline
+    ? {
+        ...data.timeline,
+        audio: resolvePublicAsset(data.timeline.audio)
+      }
+    : undefined,
+  scenes: data.scenes.map((scene) => {
+    const clips = Array.isArray(scene.clips)
+      ? scene.clips.map(resolvePublicAsset)
+      : [];
+
+    return {
+      ...scene,
+      src: clips[0] ?? resolvePublicAsset(scene.src),
+      sequence: clips.slice(1),
+      text: scene.dialogue ? dialogues[scene.dialogue] : undefined,
+      patch: scene.module ? hydraModules[scene.module] : undefined
+    };
+  })
 };
