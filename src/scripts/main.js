@@ -5,25 +5,14 @@ import SceneManager from "./SceneManager.js";
 import PerformanceMonitor from "./PerformanceMonitor.js";
 import SubtitleManager from "./SubtitleManager.js";
 
-const performanceModules = import.meta.glob(
-  "../performances/*/index.js",
-  { eager: true }
-);
-
+const performanceModules = import.meta.glob("../performances/*/index.js", { eager: true });
 const performanceName =
   document.documentElement.dataset.performance ||
   document.body.dataset.performance ||
   "fmcp";
+const performanceScore = performanceModules[`../performances/${performanceName}/index.js`]?.default;
 
-const performanceModulePath =
-  `../performances/${performanceName}/index.js`;
-
-const performanceScore =
-  performanceModules[performanceModulePath]?.default;
-
-if (!performanceScore) {
-  throw new Error(`Performance non trovata: ${performanceName}`);
-}
+if (!performanceScore) throw new Error(`Performance non trovata: ${performanceName}`);
 
 const canvas = document.querySelector("#visual-canvas");
 const video = document.querySelector("#source-video");
@@ -54,7 +43,6 @@ if (
 const visualRenderer = new Renderer({ canvas, video });
 const audioManager = new AudioManager();
 const subtitleManager = new SubtitleManager();
-
 const ui = new UIManager({
   canvas,
   video,
@@ -67,7 +55,6 @@ const ui = new UIManager({
   midValue,
   highValue
 });
-
 const sceneManager = new SceneManager({
   video,
   renderer: visualRenderer,
@@ -81,13 +68,12 @@ let started = false;
 let microphonePreparationPromise = null;
 let visualVisibility = 0;
 let lastSoundTime = performance.now();
+let automaticFallbackActive = false;
 
-// Le performance microphone-first, come FMCP, partono senza riprodurre
-// automaticamente i file audio. La regia può abilitarli in qualsiasi momento.
 let audioFileSyncEnabled =
   typeof performanceScore.audioFileSync === "boolean"
     ? performanceScore.audioFileSync
-    : performanceScore.audioPolicy !== "microphone-first";
+    : !["microphone-first", "microphone-or-auto"].includes(performanceScore.audioPolicy);
 
 function setBlackout(active) {
   blackoutActive = active;
@@ -116,7 +102,6 @@ async function setAudioFileSync(active) {
   }
 
   const scene = sceneManager.currentScene;
-
   if (started && scene?.audio) {
     await audioManager.setCueTrack(scene.audio, {
       play: true,
@@ -139,11 +124,8 @@ const performanceMonitor = new PerformanceMonitor({
 
 window.addEventListener("reactive-archive:scene-change", async (event) => {
   const scene = event.detail?.scene;
-
   subtitleManager.setScene(scene);
 
-  // Il file audio viene caricato per la scena, ma parte soltanto quando
-  // SYNC AUDIO FILE è attivo. Il microfono resta la sorgente dell'analyser.
   if (scene && Object.prototype.hasOwnProperty.call(scene, "audio")) {
     await audioManager.setCueTrack(scene.audio, {
       play: started && audioFileSyncEnabled,
@@ -159,18 +141,15 @@ function animate() {
   visualRenderer.render();
   subtitleManager.update();
 }
-
 animate();
 
 function updateAudio() {
   requestAnimationFrame(updateAudio);
-
   if (!started) return;
 
   const audioData = audioManager.update();
   const scene = sceneManager.currentScene;
   const now = performance.now();
-
   if (!scene) return;
 
   const shouldReact = audioReactiveEnabled && (scene.audioReactive ?? true);
@@ -191,10 +170,7 @@ function updateAudio() {
   if (visualVisibility < 0.002) visualVisibility = 0;
   if (visualVisibility > 0.998) visualVisibility = 1;
 
-  if (!blackoutActive) {
-    canvas.style.opacity = String(visualVisibility);
-  }
-
+  if (!blackoutActive) canvas.style.opacity = String(visualVisibility);
   visualRenderer.setVisibility(visualVisibility);
 
   const reactiveAudio = shouldReact
@@ -206,23 +182,19 @@ function updateAudio() {
   ui.updateAudioValues(audioData);
   performanceMonitor.publish(audioData);
 }
-
 updateAudio();
 
 function prepareMicrophone() {
-  if (microphonePreparationPromise) {
-    return microphonePreparationPromise;
-  }
+  if (microphonePreparationPromise) return microphonePreparationPromise;
 
   ui.setStatus("Richiesta autorizzazione microfono…");
-
   microphonePreparationPromise = audioManager
     .start({ fallbackPlay: false })
     .then(() => {
       ui.setStatus(
-        audioManager.fakeMode
-          ? "Microfono non disponibile — avvio senza microfono"
-          : "Microfono autorizzato"
+        audioManager.sourceMode === "microphone"
+          ? "Microfono autorizzato"
+          : "Microfono non disponibile — modalità automatica"
       );
     })
     .catch((error) => {
@@ -234,6 +206,21 @@ function prepareMicrophone() {
   return microphonePreparationPromise;
 }
 
+function configurePlaybackMode() {
+  const microphoneAvailable = audioManager.sourceMode === "microphone";
+  const useAutomaticFallback =
+    performanceScore.audioPolicy === "microphone-or-auto" &&
+    performanceScore.automaticFallback !== false &&
+    !microphoneAvailable;
+
+  automaticFallbackActive = useAutomaticFallback;
+  sceneManager.setAutomaticMode(useAutomaticFallback);
+
+  if (performanceScore.audioPolicy === "microphone-or-auto") {
+    audioFileSyncEnabled = !microphoneAvailable;
+  }
+}
+
 async function startExperience() {
   if (started) return;
 
@@ -243,34 +230,31 @@ async function startExperience() {
   try {
     await prepareMicrophone();
 
-    if (
-      audioManager.audioContext &&
-      audioManager.audioContext.state === "suspended"
-    ) {
+    if (audioManager.audioContext?.state === "suspended") {
       await audioManager.audioContext.resume();
     }
 
+    configurePlaybackMode();
     started = true;
     sceneManager.setStarted(true);
     lastSoundTime = performance.now();
-
     await sceneManager.load(sceneManager.currentIndex);
 
     ui.setStatus(
-      audioFileSyncEnabled
-        ? `Audio: ${audioManager.sourceMode} + file sync`
-        : `Audio: ${audioManager.sourceMode} — file sync OFF`
+      automaticFallbackActive
+        ? "AUTO — audio file + sequenza scene"
+        : audioFileSyncEnabled
+          ? `Audio: ${audioManager.sourceMode} + file sync`
+          : `LIVE — audio dal ${audioManager.sourceMode}`
     );
+
     performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
     ui.hideStartScreen();
-
     document.documentElement.requestFullscreen().catch(() => {});
   } catch (error) {
     console.error(error);
     started = false;
-    ui.setStatus(
-      error instanceof Error ? error.message : "Errore durante l'avvio."
-    );
+    ui.setStatus(error instanceof Error ? error.message : "Errore durante l'avvio.");
     ui.setStartButtonDisabled(false);
   }
 }
@@ -292,12 +276,15 @@ async function toggleMicrophoneMode() {
       microphonePreparationPromise = null;
       await prepareMicrophone();
     } else {
-      // Passare dalla sorgente microfono alla cue non deve avviare il file
-      // quando il sync è disabilitato.
       await audioManager.activateCueOrFake({ play: audioFileSyncEnabled });
     }
 
-    ui.setStatus(`Audio: ${audioManager.sourceMode}`);
+    configurePlaybackMode();
+    ui.setStatus(
+      automaticFallbackActive
+        ? "AUTO — audio file + sequenza scene"
+        : `Audio: ${audioManager.sourceMode}`
+    );
     performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
   } catch (error) {
     console.error(error);
@@ -307,7 +294,6 @@ async function toggleMicrophoneMode() {
 
 window.addEventListener("keydown", (event) => {
   if (event.key.toLowerCase() !== "s") return;
-
   const enabled = subtitleManager.toggle();
   ui.setStatus(enabled ? "Sottotitoli attivi" : "Sottotitoli disattivati");
 });
@@ -322,4 +308,4 @@ ui.onRestartVideo(() => sceneManager.restart());
 ui.setAudioReactiveState(audioReactiveEnabled);
 
 performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
-ui.setStatus("Premi AVVIA per iniziare e autorizzare il microfono.");
+ui.setStatus("Premi AVVIA: microfono = LIVE, senza microfono = AUTO.");
