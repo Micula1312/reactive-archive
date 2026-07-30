@@ -16,10 +16,11 @@ export default class SceneManager {
     this.currentController = null;
     this.sceneTimer = null;
     this.paused = false;
+    this.automaticMode = false;
     this.videoSequence = [];
     this.videoSequenceIndex = 0;
     this.handleResize = () => this.currentController?.resize?.();
-    this.handleVideoEnded = () => this.advanceVideoSequence().catch(console.error);
+    this.handleVideoEnded = () => this.handleVideoCompletion().catch(console.error);
     window.addEventListener("resize", this.handleResize);
     this.video.addEventListener("ended", this.handleVideoEnded);
   }
@@ -29,6 +30,7 @@ export default class SceneManager {
   get currentControls() { return getSceneControls(this.currentScene); }
   get isPaused() { return this.paused; }
   setStarted(started) { this.started = Boolean(started); }
+  setAutomaticMode(active) { this.automaticMode = Boolean(active); }
 
   clearSceneTimer() {
     if (this.sceneTimer) window.clearTimeout(this.sceneTimer);
@@ -89,12 +91,18 @@ export default class SceneManager {
     }
   }
 
-  async advanceVideoSequence() {
+  async handleVideoCompletion() {
     if (this.currentScene?.type !== "video") return;
-    if (this.videoSequenceIndex >= this.videoSequence.length - 1) return;
 
-    this.videoSequenceIndex += 1;
-    await this.playVideoSource(this.videoSequence[this.videoSequenceIndex], { loop: false });
+    if (this.videoSequenceIndex < this.videoSequence.length - 1) {
+      this.videoSequenceIndex += 1;
+      await this.playVideoSource(this.videoSequence[this.videoSequenceIndex], { loop: false });
+      return;
+    }
+
+    if (this.automaticMode && this.started) {
+      await this.next();
+    }
   }
 
   async enterVideoScene(scene) {
@@ -107,10 +115,9 @@ export default class SceneManager {
     this.videoSequence = await this.buildVideoSequence(scene);
     this.videoSequenceIndex = 0;
     const hasSequence = this.videoSequence.length > 1;
+    const shouldLoop = this.automaticMode ? false : (hasSequence ? false : (scene.loop ?? true));
 
-    await this.playVideoSource(this.videoSequence[0], {
-      loop: hasSequence ? false : (scene.loop ?? true)
-    });
+    await this.playVideoSource(this.videoSequence[0], { loop: shouldLoop });
   }
 
   createController(scene) {
@@ -156,7 +163,12 @@ export default class SceneManager {
   }
 
   scheduleAutomaticNext(scene) {
-    if (scene.advance === "manual" || this.performance.mode === "manual") return;
+    const automaticScene = this.automaticMode || (
+      scene.advance !== "manual" && this.performance.mode !== "manual"
+    );
+
+    if (!automaticScene || scene.type === "video") return;
+
     const duration = Number(scene.duration ?? 0);
     if (!this.started || duration <= 0) return;
     this.sceneTimer = window.setTimeout(() => this.next().catch(console.error), duration);
@@ -202,7 +214,7 @@ export default class SceneManager {
     this.videoSequenceIndex = 0;
     const src = this.videoSequence[0] ?? this.currentScene?.src;
     return this.playVideoSource(src, {
-      loop: this.videoSequence.length > 1 ? false : (this.currentScene?.loop ?? true)
+      loop: this.automaticMode ? false : (this.videoSequence.length > 1 ? false : (this.currentScene?.loop ?? true))
     });
   }
 }
