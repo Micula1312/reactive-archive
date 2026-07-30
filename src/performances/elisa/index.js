@@ -16,9 +16,10 @@ export default {
   ...data,
   scenes: data.scenes.map((scene, index) => ({
     ...scene,
-    src: index === 0
-      ? `${baseUrl}elisa/videos/video-01.mp4`
-      : resolvePublicAsset(scene.src),
+    // Tutti i video Elisa vivono in public/elisa/videos.
+    // Il path dichiarato nella partitura viene risolto rispetto a BASE_URL,
+    // senza override speciali sulla prima scena.
+    src: resolvePublicAsset(scene.src),
     // Il sottofondo parte con la prima scena e resta attivo
     // finché una scena successiva non dichiara esplicitamente audio: null.
     ...(index === 0
