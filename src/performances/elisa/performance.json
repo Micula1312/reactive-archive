@@ -5,11 +5,11 @@
   ],
   "id": "elisa",
   "title": "Aicha Kandisha — Elisa Performance",
-  "author": "Micol Gelsi",
-  "duration": "15:00",
+  "author": "BLIVET",
+  "duration": "30:00",
   "minimumVisibility": 0.38,
   "timeline": {
-    "audio": "/elisa/audio/prima_parte.mp3",
+    "audio": "/elisa/audio/elisa-definitiva-30min.mp3",
     "autoplay": true,
     "loop": false,
     "useAsClock": true,
@@ -17,15 +17,17 @@
   },
   "scenes": [
     {"id":"clock-face-id","order":1,"start":"00:00","title":"Orologio + Face ID","type":"video","dramaturgicalType":"video","function":"Ingresso / riconoscimento","clips":["/elisa/videos/Video-01.mp4"],"loop":true,"minimumVisibility":0.42,"audioReactive":true,"reactivity":1,"filter":{"preset":"defocus","intensity":0.92,"bassImpact":0.78,"midFlow":0.94,"highDetail":0.82}},
-    {"id":"hydra-genesis","order":2,"start":"01:10","title":"HYDRA 0 — Genesi","type":"hydra","dramaturgicalType":"live-coding","function":"Nascita del linguaggio","module":"genesis","dialogue":"genesis","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
-    {"id":"loader","order":3,"start":"02:25","title":"Loader","type":"video","dramaturgicalType":"video","function":"Sospensione","clips":["/elisa/videos/03-Loader.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":0.92,"midFlow":0.82,"highDetail":1}},
-    {"id":"vertical-body","order":4,"start":"03:35","title":"Video verticale","type":"video","dramaturgicalType":"video","function":"Corpo","clips":["/elisa/videos/04-Video-Verticale.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"soft-gradient","intensity":0.96,"bassImpact":0.88,"midFlow":1,"highDetail":0.78}},
-    {"id":"hydra-apparition","order":5,"start":"04:50","title":"HYDRA I — Apparizione","type":"hydra","dramaturgicalType":"live-coding","function":"Primo incontro","module":"apparition","dialogue":"apparition","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
-    {"id":"photo-memory","order":6,"start":"06:05","title":"Foto","type":"video","dramaturgicalType":"archive","function":"Memoria","clips":["/elisa/videos/06-Foto.mp4"],"loop":true,"minimumVisibility":0.42,"audioReactive":true,"reactivity":1,"filter":{"preset":"defocus","intensity":0.94,"bassImpact":0.72,"midFlow":1,"highDetail":0.68}},
-    {"id":"touch-3d","order":7,"start":"07:20","title":"3D Touch","type":"video","dramaturgicalType":"video","function":"Deformazione","clips":["/elisa/videos/07-3d-touch.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":1,"midFlow":0.9,"highDetail":1}},
-    {"id":"rotation","order":8,"start":"08:35","title":"Rotazione","type":"video","dramaturgicalType":"video","function":"Perdita orientamento","clips":["/elisa/videos/08-Rotazione.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":0.78,"bassImpact":0.84,"midFlow":0.58,"highDetail":0.72}},
-    {"id":"hydra-resonance","order":9,"start":"09:50","title":"HYDRA II — Risonanza","type":"hydra","dramaturgicalType":"live-coding","function":"Ascolto reciproco","module":"resonance","dialogue":"resonance","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
-    {"id":"forest-numbers","order":10,"start":"11:30","title":"Foresta + Numeri","type":"video","dramaturgicalType":"archive","function":"Accumulo","clips":["/elisa/videos/10-foresta-numeri.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":0.96,"midFlow":0.92,"highDetail":1}},
-    {"id":"forest-images","order":11,"start":"13:10","title":"Foresta + Immagini","type":"video","dramaturgicalType":"archive","function":"Stratificazione","clips":["/elisa/videos/11-foresta-immagini.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"defocus","intensity":0.7,"bassImpact":0.48,"midFlow":0.9,"highDetail":0.3}}
+    {"id":"hydra-genesis","order":2,"start":"01:20","title":"HYDRA 0 — Genesi","type":"hydra","dramaturgicalType":"live-coding","function":"Nascita del linguaggio","module":"genesis","dialogue":"genesis","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
+    {"id":"loader","order":3,"start":"05:20","title":"Loader","type":"video","dramaturgicalType":"video","function":"Sospensione","clips":["/elisa/videos/03-Loader.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":0.92,"midFlow":0.82,"highDetail":1}},
+    {"id":"vertical-body","order":4,"start":"05:50","title":"Video verticale","type":"video","dramaturgicalType":"video","function":"Corpo","clips":["/elisa/videos/04-Video-Verticale.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"soft-gradient","intensity":0.96,"bassImpact":0.88,"midFlow":1,"highDetail":0.78}},
+    {"id":"hydra-apparition","order":5,"start":"07:30","title":"HYDRA I — Apparizione","type":"hydra","dramaturgicalType":"live-coding","function":"Primo incontro","module":"apparition","dialogue":"apparition","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
+    {"id":"photo-memory","order":6,"start":"11:30","title":"Foto","type":"video","dramaturgicalType":"archive","function":"Memoria","clips":["/elisa/videos/06-Foto.mp4"],"loop":true,"minimumVisibility":0.42,"audioReactive":true,"reactivity":1,"filter":{"preset":"defocus","intensity":0.94,"bassImpact":0.72,"midFlow":1,"highDetail":0.68}},
+    {"id":"touch-3d","order":7,"start":"13:00","title":"3D Touch","type":"video","dramaturgicalType":"video","function":"Deformazione","clips":["/elisa/videos/07-3d-touch.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":1,"midFlow":0.9,"highDetail":1}},
+    {"id":"hydra-hypnosis","order":8,"start":"14:30","title":"HYDRA II — Ipnosi","type":"hydra","dramaturgicalType":"live-coding","function":"Ipnocrazia / rottura","module":"hypnosis","dialogue":"hypnosis","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
+    {"id":"rotation","order":9,"start":"18:30","title":"Rotazione","type":"video","dramaturgicalType":"video","function":"Perdita orientamento","clips":["/elisa/videos/08-Rotazione.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":0.78,"bassImpact":0.84,"midFlow":0.58,"highDetail":0.72}},
+    {"id":"hydra-resonance","order":10,"start":"20:00","title":"HYDRA III — Risonanza","type":"hydra","dramaturgicalType":"live-coding","function":"Ascolto reciproco","module":"resonance","dialogue":"resonance","minimumVisibility":0.46,"audioReactive":true,"reactivity":1},
+    {"id":"forest-numbers","order":11,"start":"24:00","title":"Foresta + Numeri","type":"video","dramaturgicalType":"archive","function":"Accumulo","clips":["/elisa/videos/10-foresta-numeri.mp4"],"loop":true,"minimumVisibility":0.4,"audioReactive":true,"reactivity":1,"filter":{"preset":"glitch","intensity":1,"bassImpact":0.96,"midFlow":0.92,"highDetail":1}},
+    {"id":"forest-images","order":12,"start":"25:30","title":"Foresta + Immagini","type":"video","dramaturgicalType":"archive","function":"Stratificazione","clips":["/elisa/videos/11-foresta-immagini.mp4"],"loop":true,"minimumVisibility":0.44,"audioReactive":true,"reactivity":1,"filter":{"preset":"defocus","intensity":0.7,"bassImpact":0.48,"midFlow":0.9,"highDetail":0.3}},
+    {"id":"hydra-farewell","order":13,"start":"27:00","title":"HYDRA IV — Chiusura / Crediti","type":"hydra","dramaturgicalType":"live-coding","function":"Congedo / crediti","module":"farewell","dialogue":"farewell","minimumVisibility":0.46,"audioReactive":true,"reactivity":1}
   ]
 }
