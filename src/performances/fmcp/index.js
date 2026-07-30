@@ -130,7 +130,7 @@ const fmcp = {
       season: "summer",
       mood: "trance, apertura, euforia sospesa",
       type: "video",
-      src: `${base}/videos/Fmcp_Visuals_Omm.mp4`,
+      src: `${base}/videos/Fmcp_Visuals_No_Title_3.mp4`,
       audio: `${base}/audio/5_OMM.mp3`,
       loop: true,
       advance: "manual",
@@ -163,8 +163,9 @@ const fmcp = {
     }
   ],
 
+  // Il visual OMM resta fuori dalla regia principale ed è disponibile solo come riserva.
   alternateVisuals: [
-    `${base}/videos/Fmcp_Visuals_No_Title_3.mp4`
+    `${base}/videos/Fmcp_Visuals_Omm.mp4`
   ]
 };
 
