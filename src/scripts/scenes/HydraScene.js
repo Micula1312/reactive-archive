@@ -8,6 +8,8 @@ export default class HydraScene {
     this.canvas = null;
     this.hydra = null;
     this.audioData = { level: 0, bass: 0, mid: 0, high: 0 };
+    this.parameters = this.scene.parameters ?? {};
+    this.scene.parameters = this.parameters;
     this.lastPatchUpdate = 0;
   }
 
@@ -46,18 +48,20 @@ export default class HydraScene {
   }
 
   applyPatch() {
-    this.scene.patch(this.audioData);
+    // Compatibile con le patch esistenti: il primo argomento resta l'audio.
+    // Le nuove patch Hydra ricevono i parametri live come secondo argomento.
+    this.scene.patch(this.audioData, this.parameters);
     this.lastPatchUpdate = performance.now();
   }
 
-  update(audioData = {}) {
-    this.audioData = { ...this.audioData, ...audioData };
+  setParameter(key, value) {
+    this.parameters[key] = value;
+  }
 
-    // Le patch attuali ricevono valori audio al momento dell'esecuzione.
-    // Un aggiornamento controllato evita di ricostruire la pipeline ogni frame.
-    if (performance.now() - this.lastPatchUpdate > 250) {
-      this.applyPatch();
-    }
+  update(audioData = {}) {
+    // Manteniamo stabile l'oggetto: le callback Hydra tipo () => audio.bass
+    // e () => params.speed leggono sempre i valori live più recenti.
+    Object.assign(this.audioData, audioData);
   }
 
   resize() {
