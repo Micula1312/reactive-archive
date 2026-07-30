@@ -14,14 +14,14 @@ function resolvePublicAsset(src) {
 
 export default {
   ...data,
+  // Con microfono: performance live, tutta la reattività arriva dal mic.
+  // Senza microfono: il motore abilita i file audio e avanza le scene in automatico.
+  audioPolicy: "microphone-or-auto",
+  mode: "manual",
+  automaticFallback: true,
   scenes: data.scenes.map((scene, index) => ({
     ...scene,
-    // Tutti i video Elisa vivono in public/elisa/videos.
-    // Il path dichiarato nella partitura viene risolto rispetto a BASE_URL,
-    // senza override speciali sulla prima scena.
     src: resolvePublicAsset(scene.src),
-    // Il sottofondo parte con la prima scena e resta attivo
-    // finché una scena successiva non dichiara esplicitamente audio: null.
     ...(index === 0
       ? {
           audio: `${baseUrl}elisa/audio/prima_parte.mp3`,
