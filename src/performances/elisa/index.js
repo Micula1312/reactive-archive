@@ -16,11 +16,17 @@ export default {
   ...data,
   scenes: data.scenes.map((scene, index) => ({
     ...scene,
-    // Per il test attuale la prima scena usa il file realmente presente
-    // in public/elisa/videos/video-01.mp4.
     src: index === 0
       ? `${baseUrl}elisa/videos/video-01.mp4`
       : resolvePublicAsset(scene.src),
+    // Il sottofondo parte con la prima scena e resta attivo
+    // finché una scena successiva non dichiara esplicitamente audio: null.
+    ...(index === 0
+      ? {
+          audio: `${baseUrl}elisa/audio/prima_parte.mp3`,
+          audioAudible: true
+        }
+      : {}),
     text: scene.dialogue ? dialogues[scene.dialogue] : undefined,
     patch: scene.module ? hydraModules[scene.module] : undefined
   }))
