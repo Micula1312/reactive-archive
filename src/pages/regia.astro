@@ -117,26 +117,54 @@
       let lastStateAt = 0;
       let scenes = [];
       let activeSceneId = null;
+      let cueSignature = "";
+      let renderedActiveIndex = -1;
 
       function send(command, extra = {}) {
         channel.postMessage({ type: "regia-command", command, ...extra });
       }
 
       function renderCues(activeIndex) {
-        cueList.innerHTML = "";
-        scenes.forEach((cue) => {
-          const button = document.createElement("button");
-          button.className = `cue${cue.index === activeIndex ? " active" : ""}`;
-          button.innerHTML = `<span class="cue-index">${String(cue.index + 1).padStart(2, "0")}</span><span class="cue-title">${cue.title}</span><span class="cue-type">${cue.dramaturgicalType || cue.type}</span>`;
-          button.addEventListener("click", () => send("select", { index: cue.index }));
-          cueList.append(button);
-          if (cue.index === activeIndex) button.scrollIntoView({ block: "nearest" });
+        const nextSignature = scenes
+          .map((cue) => `${cue.index}:${cue.id}:${cue.title}:${cue.start ?? ""}`)
+          .join("|");
+
+        if (nextSignature !== cueSignature) {
+          cueSignature = nextSignature;
+          cueList.innerHTML = "";
+
+          scenes.forEach((cue) => {
+            const button = document.createElement("button");
+            button.className = "cue";
+            button.type = "button";
+            button.dataset.sceneIndex = String(cue.index);
+            button.innerHTML = `<span class="cue-index">${String(cue.index + 1).padStart(2, "0")}</span><span class="cue-title">${cue.title}</span><span class="cue-type">${cue.dramaturgicalType || cue.type}</span>`;
+            cueList.append(button);
+          });
+        }
+
+        if (activeIndex === renderedActiveIndex && nextSignature === cueSignature) return;
+        renderedActiveIndex = activeIndex;
+
+        cueList.querySelectorAll(".cue").forEach((button) => {
+          const index = Number(button.dataset.sceneIndex);
+          button.classList.toggle("active", index === activeIndex);
+          if (index === activeIndex) button.scrollIntoView({ block: "nearest" });
         });
       }
+
+      cueList.addEventListener("click", (event) => {
+        const button = event.target.closest("button[data-scene-index]");
+        if (!button) return;
+        const index = Number(button.dataset.sceneIndex);
+        if (!Number.isInteger(index)) return;
+        send("select", { index });
+      });
 
       function renderControls(controls = [], sceneId = "") {
         if (!Array.isArray(controls) || controls.length === 0) {
           liveControls.innerHTML = '<div class="controls-empty">Nessun parametro per questa scena.</div>';
+          activeSceneId = sceneId;
           return;
         }
 
