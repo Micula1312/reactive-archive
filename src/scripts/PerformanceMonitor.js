@@ -24,6 +24,9 @@ export default class PerformanceMonitor {
           case "select": await this.sceneManager.select(Number(message.index)); break;
           case "restart": await this.sceneManager.restart(); break;
           case "blackout": this.onBlackout?.(Boolean(message.active)); break;
+          case "set-parameter":
+            this.sceneManager.setParameter(String(message.key), Number(message.value));
+            break;
           default: return;
         }
         this.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
@@ -69,7 +72,8 @@ export default class PerformanceMonitor {
         id: currentScene?.id,
         title: currentScene?.title,
         type: currentScene?.type,
-        filter: currentScene?.filter?.preset
+        filter: currentScene?.filter?.preset,
+        controls: this.sceneManager.currentControls
       },
       nextScene: {
         index: (currentIndex + 1) % scenes.length,
