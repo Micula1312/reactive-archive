@@ -5,6 +5,7 @@ export default class SubtitleManager {
     this.currentCueIndex = -1;
     this.enabled = true;
     this.sceneStartedAt = 0;
+    this.pendingShowTimer = null;
 
     this.injectStyles();
     this.element = this.createLayer();
@@ -69,6 +70,7 @@ export default class SubtitleManager {
   }
 
   setScene(scene) {
+    this.cancelPendingShow();
     this.scene = scene ?? null;
     this.cues = this.normalizeCues(scene);
     this.currentCueIndex = -1;
@@ -98,7 +100,10 @@ export default class SubtitleManager {
 
   setEnabled(enabled) {
     this.enabled = Boolean(enabled);
-    if (!this.enabled) this.clear();
+    if (!this.enabled) {
+      this.cancelPendingShow();
+      this.clear();
+    }
   }
 
   toggle() {
@@ -119,6 +124,8 @@ export default class SubtitleManager {
     if (cueIndex === this.currentCueIndex) return;
 
     this.currentCueIndex = cueIndex;
+    this.cancelPendingShow();
+
     if (cueIndex < 0) {
       this.clear();
       return;
@@ -131,12 +138,17 @@ export default class SubtitleManager {
     const hasTimings = this.cues.some((cue) => Number.isFinite(Number(cue.time)));
 
     if (hasTimings) {
-      let index = -1;
-      for (let i = 0; i < this.cues.length; i += 1) {
-        const start = Number(this.cues[i].time ?? 0);
-        if (elapsedSeconds >= start) index = i;
-      }
-      return index;
+      return this.cues.findIndex((cue, index) => {
+        const start = Number(cue.time ?? 0);
+        const nextStart = Number(this.cues[index + 1]?.time);
+        const end = Number.isFinite(Number(cue.end))
+          ? Number(cue.end)
+          : Number.isFinite(nextStart)
+            ? nextStart
+            : Number.POSITIVE_INFINITY;
+
+        return elapsedSeconds >= start && elapsedSeconds < end;
+      });
     }
 
     const sceneDurationSeconds = Number(this.scene?.duration ?? 0) / 1000;
@@ -157,12 +169,20 @@ export default class SubtitleManager {
 
     this.element.classList.remove("is-visible");
 
-    window.setTimeout(() => {
+    this.pendingShowTimer = window.setTimeout(() => {
+      this.pendingShowTimer = null;
       if (!this.enabled) return;
       speakerElement.textContent = cue.label ?? this.formatSpeaker(cue.speaker);
       textElement.textContent = cue.text ?? "";
       this.element.classList.add("is-visible");
     }, 360);
+  }
+
+  cancelPendingShow() {
+    if (this.pendingShowTimer) {
+      window.clearTimeout(this.pendingShowTimer);
+      this.pendingShowTimer = null;
+    }
   }
 
   clear() {
