@@ -13,15 +13,15 @@ const fmcp = {
       title: "INTRODACQUA 8.30AM",
       type: "video",
       src: `${base}/videos/FMCP_visuals_NO_TITLE.mp4`,
-      audio: `${base}/audio/FMCP - INTRODACQUA 8.30AM vDani 2.mp3`,
+      audio: `${base}/audio/FMCP - INTRODACQUA.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "soft-gradient",
-        intensity: 0.58,
-        bassImpact: 0.28,
-        midFlow: 0.82,
-        highDetail: 0.18
+        intensity: 0.75,
+        bassImpact: 0.45,
+        midFlow: 0.95,
+        highDetail: 0.35
       }
     },
 
@@ -30,15 +30,15 @@ const fmcp = {
       title: "MONTAGNA",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_DK.mp4`,
-      audio: `${base}/audio/FMCP_MONTAGNA.mp3`,
+      audio: `${base}/audio/9_MONTAGNA.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "soft-gradient",
-        intensity: 0.5,
-        bassImpact: 0.4,
-        midFlow: 0.72,
-        highDetail: 0.24
+        intensity: 0.68,
+        bassImpact: 0.60,
+        midFlow: 0.82,
+        highDetail: 0.32
       }
     },
 
@@ -47,15 +47,15 @@ const fmcp = {
       title: "OMM",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_Omm.mp4`,
-      audio: `${base}/audio/OMM_mix 2.mp3`,
+      audio: `${base}/audio/5_OMM.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "defocus",
-        intensity: 0.46,
-        bassImpact: 0.28,
-        midFlow: 0.72,
-        highDetail: 0.18
+        intensity: 0.70,
+        bassImpact: 0.40,
+        midFlow: 0.90,
+        highDetail: 0.25
       }
     },
 
@@ -64,15 +64,15 @@ const fmcp = {
       title: "AI",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_Ai.mp4`,
-      audio: `${base}/audio/PRESET FMCP _ AI.mp3`,
+      audio: `${base}/audio/1_AI.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "glitch",
-        intensity: 0.58,
-        bassImpact: 0.74,
-        midFlow: 0.38,
-        highDetail: 0.72
+        intensity: 0.90,
+        bassImpact: 1.00,
+        midFlow: 0.55,
+        highDetail: 1.00
       }
     },
 
@@ -81,15 +81,15 @@ const fmcp = {
       title: "AS THE PIG",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_As_The_Pig.mp4`,
-      audio: `${base}/audio/PRESET FMCP_ AS THE PIG.mp3`,
+      audio: `${base}/audio/3_AS_THE_PIG.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "glitch",
-        intensity: 0.78,
-        bassImpact: 0.92,
-        midFlow: 0.5,
-        highDetail: 0.84
+        intensity: 1.00,
+        bassImpact: 1.00,
+        midFlow: 0.65,
+        highDetail: 1.00
       }
     },
 
@@ -98,15 +98,15 @@ const fmcp = {
       title: "BRUTALISMO",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_Brutalismo.mp4`,
-      audio: `${base}/audio/PRESET FMCP_BRUTALISMO mix v1.mp3`,
+      audio: `${base}/audio/4_BRUTALISMO mix v1.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "defocus",
-        intensity: 0.78,
-        bassImpact: 0.72,
-        midFlow: 0.58,
-        highDetail: 0.26
+        intensity: 0.92,
+        bassImpact: 0.90,
+        midFlow: 0.72,
+        highDetail: 0.45
       }
     },
 
@@ -115,15 +115,15 @@ const fmcp = {
       title: "FORESTA",
       type: "video",
       src: `${base}/videos/Fmcp_Visuals_Foresta.mp4`,
-      audio: null,
+      audio: `${base}/audio/2_FORESTA.mp3`,
       loop: true,
       advance: "manual",
       filter: {
         preset: "soft-gradient",
-        intensity: 0.66,
-        bassImpact: 0.4,
-        midFlow: 0.5,
-        highDetail: 0.18
+        intensity: 0.82,
+        bassImpact: 0.60,
+        midFlow: 0.70,
+        highDetail: 0.30
       }
     },
 
@@ -137,10 +137,10 @@ const fmcp = {
       advance: "manual",
       filter: {
         preset: "soft-gradient",
-        intensity: 0.58,
-        bassImpact: 0.42,
-        midFlow: 0.46,
-        highDetail: 0.28
+        intensity: 0.78,
+        bassImpact: 0.58,
+        midFlow: 0.62,
+        highDetail: 0.40
       }
     }
   ],
