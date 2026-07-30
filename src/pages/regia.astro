@@ -39,11 +39,13 @@
       .control output { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; opacity: .7; }
       .control input[type="range"] { width: 100%; accent-color: #fff; }
       .controls-empty { opacity: .45; font-size: 13px; }
-      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(5, minmax(90px, 1fr)); gap: 10px; }
+      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(7, minmax(82px, 1fr)); gap: 10px; }
       footer button { min-height: 58px; border: 1px solid #555; background: #111; color: #fff; cursor: pointer; }
       footer button:hover { background: #222; }
       footer .go { background: #f5f5f5; color: #080808; font-weight: 700; }
       footer .blackout.active { background: #a00; border-color: #f44; }
+      footer .toggle.active { background: #f5f5f5; color: #080808; border-color: #fff; }
+      @media (max-width: 900px) { footer { grid-template-columns: repeat(4, 1fr); } }
       @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 34vh; border-right: 0; border-bottom: 1px solid #333; } .control { grid-template-columns: 100px 1fr 48px; } footer { grid-template-columns: repeat(3, 1fr); } }
     </style>
   </head>
@@ -84,8 +86,10 @@
       <footer>
         <button data-command="previous">◀ PREV</button>
         <button data-command="restart">↺ RESTART</button>
+        <button id="pause-button" class="toggle">Ⅱ PAUSA</button>
         <button class="go" data-command="go">GO ▶</button>
         <button data-command="next">NEXT ▶</button>
+        <button id="mute-button" class="toggle">🔊 AUDIO</button>
         <button id="blackout-button" class="blackout">BLACKOUT</button>
       </footer>
     </div>
@@ -100,7 +104,11 @@
       const dot = document.querySelector("#connection-dot");
       const connectionLabel = document.querySelector("#connection-label");
       const blackoutButton = document.querySelector("#blackout-button");
+      const muteButton = document.querySelector("#mute-button");
+      const pauseButton = document.querySelector("#pause-button");
       let blackout = false;
+      let muted = false;
+      let paused = false;
       let lastStateAt = 0;
       let scenes = [];
       let activeSceneId = null;
@@ -170,6 +178,13 @@
         document.querySelector(`#${name}-value`).textContent = safe.toFixed(2);
       }
 
+      function renderToggleStates() {
+        muteButton.classList.toggle("active", muted);
+        muteButton.textContent = muted ? "🔇 MUTO" : "🔊 AUDIO";
+        pauseButton.classList.toggle("active", paused);
+        pauseButton.textContent = paused ? "▶ RIPRENDI" : "Ⅱ PAUSA";
+      }
+
       channel.addEventListener("message", (event) => {
         const state = event.data;
         if (state?.type !== "performance-state") return;
@@ -180,6 +195,9 @@
         currentTitle.textContent = state.scene?.title || "—";
         nextTitle.textContent = state.nextScene?.title || "—";
         scenes = state.performance?.scenes || scenes;
+        muted = Boolean(state.audioMuted);
+        paused = Boolean(state.paused);
+        renderToggleStates();
         renderCues(state.scene?.index ?? -1);
         renderControls(state.scene?.controls, state.scene?.id);
         updateMeter("level", state.audio?.level);
@@ -190,6 +208,18 @@
 
       document.querySelectorAll("[data-command]").forEach((button) => {
         button.addEventListener("click", () => send(button.dataset.command));
+      });
+
+      muteButton.addEventListener("click", () => {
+        muted = !muted;
+        renderToggleStates();
+        send("mute", { active: muted });
+      });
+
+      pauseButton.addEventListener("click", () => {
+        paused = !paused;
+        renderToggleStates();
+        send("pause", { active: paused });
       });
 
       blackoutButton.addEventListener("click", () => {
@@ -203,6 +233,8 @@
         if (event.code === "ArrowRight") send("next");
         if (event.code === "ArrowLeft") send("previous");
         if (event.key.toLowerCase() === "b") blackoutButton.click();
+        if (event.key.toLowerCase() === "m") muteButton.click();
+        if (event.key.toLowerCase() === "p") pauseButton.click();
       });
 
       setInterval(() => {
@@ -212,6 +244,7 @@
         }
       }, 500);
 
+      renderToggleStates();
       channel.postMessage({ type: "request-state" });
     </script>
   </body>
