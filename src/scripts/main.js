@@ -3,6 +3,7 @@ import AudioManager from "./AudioManager.js";
 import { UIManager } from "./AppUi.js";
 import SceneManager from "./SceneManager.js";
 import PerformanceMonitor from "./PerformanceMonitor.js";
+import SubtitleManager from "./SubtitleManager.js";
 
 const performanceModules = import.meta.glob(
   "../performances/*/index.js",
@@ -54,6 +55,7 @@ if (
 
 const visualRenderer = new Renderer({ canvas, video });
 const audioManager = new AudioManager();
+const subtitleManager = new SubtitleManager();
 
 const ui = new UIManager({
   canvas,
@@ -87,6 +89,7 @@ function setBlackout(active) {
   document.body.dataset.blackout = active ? "true" : "false";
   canvas.style.visibility = active ? "hidden" : "visible";
   video.style.visibility = active ? "hidden" : "visible";
+  subtitleManager.element.style.visibility = active ? "hidden" : "visible";
 
   document.querySelectorAll("[data-scene-layer]").forEach((element) => {
     if (element instanceof HTMLElement) {
@@ -107,6 +110,8 @@ const performanceMonitor = new PerformanceMonitor({
 window.addEventListener("reactive-archive:scene-change", async (event) => {
   const scene = event.detail?.scene;
 
+  subtitleManager.setScene(scene);
+
   // Cambia o interrompe la traccia soltanto quando la scena dichiara
   // esplicitamente la proprietà audio. In assenza della proprietà,
   // il sottofondo già avviato continua durante le scene successive.
@@ -123,6 +128,7 @@ window.addEventListener("reactive-archive:scene-change", async (event) => {
 function animate() {
   requestAnimationFrame(animate);
   visualRenderer.render();
+  subtitleManager.update();
 }
 
 animate();
@@ -264,6 +270,13 @@ async function toggleMicrophoneMode() {
     ui.setStatus(error instanceof Error ? error.message : "Errore audio.");
   }
 }
+
+window.addEventListener("keydown", (event) => {
+  if (event.key.toLowerCase() !== "s") return;
+
+  const enabled = subtitleManager.toggle();
+  ui.setStatus(enabled ? "Sottotitoli attivi" : "Sottotitoli disattivati");
+});
 
 ui.onStart(startExperience);
 ui.onNextVideo(() => sceneManager.next());
