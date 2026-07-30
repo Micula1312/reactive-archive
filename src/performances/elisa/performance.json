@@ -9,12 +9,12 @@
   "title": "Aicha Kandisha — Elisa Performance",
   "author": "Micol Gelsi",
 
-  "duration": "30:00",
+  "duration": "25:00",
 
   "minimumVisibility": 0.38,
 
   "timeline": {
-    "audio": "/elisa/audio/elisa-definitiva-30min.mp3",
+    "audio": "/elisa/audio/elisa-definitiva-25min.mp3",
     "autoplay": true,
     "loop": false,
     "useAsClock": true,
@@ -24,178 +24,168 @@
   "scenes": [
 
     {
-      "id":"clock-face-id",
-      "order":1,
-      "start":"00:00",
-      "title":"Orologio + Face ID",
-      "type":"video",
-      "clips":["/elisa/videos/Video-01.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"defocus",
-        "intensity":0.92,
-        "bassImpact":0.78,
-        "midFlow":0.94,
-        "highDetail":0.82
+      "id": "clock-face-id",
+      "order": 1,
+      "start": "00:00",
+      "title": "Orologio + Face ID",
+      "type": "video",
+      "clips": ["/elisa/videos/Video-01.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "defocus",
+        "intensity": 0.92,
+        "bassImpact": 0.78,
+        "midFlow": 0.94,
+        "highDetail": 0.82
       }
     },
 
     {
-      "id":"hydra-genesis",
-      "order":2,
-      "start":"01:20",
-      "title":"HYDRA I — Genesi",
-      "type":"hydra",
-      "module":"genesis",
-      "dialogue":"genesis"
+      "id": "hydra-genesis",
+      "order": 2,
+      "start": "01:20",
+      "title": "HYDRA I — Genesi",
+      "type": "hydra",
+      "module": "genesis",
+      "dialogue": "genesis"
     },
 
     {
-      "id":"loader",
-      "order":3,
-      "start":"05:20",
-      "title":"Loader",
-      "type":"video",
-      "clips":["/elisa/videos/03-Loader.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"glitch",
-        "intensity":1
+      "id": "loader",
+      "order": 3,
+      "start": "04:50",
+      "title": "Loader",
+      "type": "video",
+      "clips": ["/elisa/videos/03-Loader.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "glitch",
+        "intensity": 1
       }
     },
 
     {
-      "id":"vertical-body",
-      "order":4,
-      "start":"05:50",
-      "title":"Video verticale",
-      "type":"video",
-      "clips":["/elisa/videos/04-Video-Verticale.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"soft-gradient",
-        "intensity":0.95
+      "id": "vertical-body",
+      "order": 4,
+      "start": "05:20",
+      "title": "Video verticale",
+      "type": "video",
+      "clips": ["/elisa/videos/04-Video-Verticale.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "soft-gradient",
+        "intensity": 0.95
       }
     },
 
     {
-      "id":"hydra-apparition",
-      "order":5,
-      "start":"07:30",
-      "title":"HYDRA II — Apparizione",
-      "type":"hydra",
-      "module":"apparition",
-      "dialogue":"apparition"
+      "id": "hydra-apparition",
+      "order": 5,
+      "start": "06:50",
+      "title": "HYDRA II — Apparizione",
+      "type": "hydra",
+      "module": "apparition",
+      "dialogue": "apparition"
     },
 
     {
-      "id":"photo-memory",
-      "order":6,
-      "start":"11:30",
-      "title":"Foto",
-      "type":"video",
-      "clips":["/elisa/videos/06-Foto.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"defocus",
-        "intensity":0.88
+      "id": "photo-memory",
+      "order": 6,
+      "start": "10:20",
+      "title": "Foto",
+      "type": "video",
+      "clips": ["/elisa/videos/06-Foto.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "defocus",
+        "intensity": 0.88
       }
     },
 
     {
-      "id":"touch-3d",
-      "order":7,
-      "start":"13:00",
-      "title":"3D Touch",
-      "type":"video",
-      "clips":["/elisa/videos/07-3d-touch.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"glitch",
-        "intensity":1
+      "id": "touch-3d",
+      "order": 7,
+      "start": "11:50",
+      "title": "3D Touch",
+      "type": "video",
+      "clips": ["/elisa/videos/07-3d-touch.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "glitch",
+        "intensity": 1
       }
     },
 
     {
-      "id":"hydra-hypnosis",
-      "order":8,
-      "start":"14:30",
-      "title":"HYDRA III — Hypnosis",
-      "type":"hydra",
-      "module":"hypnosis",
-      "dialogue":"hypnosis"
+      "id": "hydra-hypnosis",
+      "order": 8,
+      "start": "13:20",
+      "title": "HYDRA III — Hypnosis",
+      "type": "hydra",
+      "module": "hypnosis",
+      "dialogue": "hypnosis"
     },
 
     {
-      "id":"rotation",
-      "order":9,
-      "start":"18:30",
-      "title":"Rotazione",
-      "type":"video",
-      "clips":["/elisa/videos/08-Rotazione.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"glitch",
-        "intensity":0.72
+      "id": "rotation",
+      "order": 9,
+      "start": "16:50",
+      "title": "Rotazione",
+      "type": "video",
+      "clips": ["/elisa/videos/08-Rotazione.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "glitch",
+        "intensity": 0.72
       }
     },
 
     {
-      "id":"hydra-resonance",
-      "order":10,
-      "start":"20:00",
-      "title":"HYDRA IV — Risonanza",
-      "type":"hydra",
-      "module":"resonance",
-      "dialogue":"resonance"
+      "id": "hydra-resonance",
+      "order": 10,
+      "start": "18:20",
+      "title": "HYDRA IV — Risonanza",
+      "type": "hydra",
+      "module": "resonance",
+      "dialogue": "resonance"
     },
 
     {
-      "id":"forest-numbers",
-      "order":11,
-      "start":"24:00",
-      "title":"Foresta + Numeri",
-      "type":"video",
-      "clips":["/elisa/videos/10-foresta-numeri.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"glitch",
-        "intensity":0.95
+      "id": "forest-numbers",
+      "order": 11,
+      "start": "21:50",
+      "title": "Foresta + Numeri",
+      "type": "video",
+      "clips": ["/elisa/videos/10-foresta-numeri.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "glitch",
+        "intensity": 0.95
       }
     },
 
     {
-      "id":"forest-images",
-      "order":12,
-      "start":"25:30",
-      "title":"Foresta + Immagini",
-      "type":"video",
-      "clips":["/elisa/videos/11-foresta-immagini.mp4"],
-      "loop":true,
-      "filter":{
-        "preset":"defocus",
-        "intensity":0.68
+      "id": "forest-images",
+      "order": 12,
+      "start": "22:50",
+      "title": "Foresta + Immagini",
+      "type": "video",
+      "clips": ["/elisa/videos/11-foresta-immagini.mp4"],
+      "loop": true,
+      "filter": {
+        "preset": "defocus",
+        "intensity": 0.68
       }
     },
 
     {
-      "id":"hydra-farewell",
-      "order":13,
-      "start":"27:00",
-      "title":"HYDRA V — Chiusura",
-      "type":"hydra",
-      "module":"farewell",
-      "dialogue":"farewell",
-
-      "credits":[
-        "ELISA",
-        "",
-        "by BLIVET",
-        "",
-        "Micol Gelsi",
-        "Benedetta Marino",
-        "Beatrice Resta"
-      ]
+      "id": "hydra-farewell",
+      "order": 13,
+      "start": "23:40",
+      "title": "HYDRA V — Chiusura",
+      "type": "hydra",
+      "module": "farewell",
+      "dialogue": "farewell"
     }
 
   ]
