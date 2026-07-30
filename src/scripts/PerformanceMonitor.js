@@ -6,6 +6,7 @@ export default class PerformanceMonitor {
     this.onBlackout = onBlackout;
     this.channel = new BroadcastChannel("reactive-archive-monitor");
     this.lastPublish = 0;
+    this.audioMuted = false;
 
     this.channel.addEventListener("message", async (event) => {
       const message = event.data;
@@ -23,6 +24,13 @@ export default class PerformanceMonitor {
           case "previous": await this.sceneManager.previous(); break;
           case "select": await this.sceneManager.select(Number(message.index)); break;
           case "restart": await this.sceneManager.restart(); break;
+          case "pause": await this.sceneManager.togglePause(message.active); break;
+          case "mute":
+            this.audioMuted = typeof message.active === "boolean"
+              ? message.active
+              : !this.audioMuted;
+            this.audioManager.cueAudio.muted = this.audioMuted;
+            break;
           case "blackout": this.onBlackout?.(Boolean(message.active)); break;
           case "set-parameter":
             this.sceneManager.setParameter(String(message.key), Number(message.value));
@@ -66,6 +74,8 @@ export default class PerformanceMonitor {
       },
       started: this.sceneManager.started,
       audioMode: this.audioManager.sourceMode || "idle",
+      audioMuted: this.audioMuted,
+      paused: this.sceneManager.isPaused,
       scene: {
         index: currentIndex,
         total: scenes.length,
