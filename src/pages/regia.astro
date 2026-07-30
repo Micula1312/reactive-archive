@@ -89,7 +89,7 @@
         <button id="pause-button" class="toggle">Ⅱ PAUSA</button>
         <button class="go" data-command="go">GO ▶</button>
         <button data-command="next">NEXT ▶</button>
-        <button id="sync-button" class="toggle">FILE AUDIO OFF</button>
+        <button id="solo-mic-button" class="toggle">SOLO MIC OFF</button>
         <button id="mute-button" class="toggle">🔊 AUDIO</button>
         <button id="blackout-button" class="blackout">BLACKOUT</button>
       </footer>
@@ -107,11 +107,12 @@
       const blackoutButton = document.querySelector("#blackout-button");
       const muteButton = document.querySelector("#mute-button");
       const pauseButton = document.querySelector("#pause-button");
-      const syncButton = document.querySelector("#sync-button");
+      const soloMicButton = document.querySelector("#solo-mic-button");
 
       let blackout = false;
       let muted = false;
       let paused = false;
+      let soloMicEnabled = false;
       let audioFileSyncEnabled = false;
       let lastStateAt = 0;
       let scenes = [];
@@ -184,13 +185,16 @@
 
       function renderToggleStates() {
         muteButton.classList.toggle("active", muted);
-        muteButton.textContent = muted ? "🔇 MUTO" : "🔊 AUDIO";
+        muteButton.textContent = muted ? "🔇 AUDIO OFF" : "🔊 AUDIO ON";
         pauseButton.classList.toggle("active", paused);
         pauseButton.textContent = paused ? "▶ RIPRENDI" : "Ⅱ PAUSA";
-        syncButton.classList.toggle("active", audioFileSyncEnabled);
-        syncButton.textContent = audioFileSyncEnabled
-          ? "FILE AUDIO ON"
-          : "FILE AUDIO OFF";
+        soloMicButton.classList.toggle("active", soloMicEnabled);
+        soloMicButton.textContent = soloMicEnabled ? "SOLO MIC ON" : "SOLO MIC OFF";
+        soloMicButton.title = soloMicEnabled
+          ? "Solo il microfono alimenta gli effetti; i file audio sono esclusi"
+          : audioFileSyncEnabled
+            ? "Fallback attivo: la traccia della scena alimenta gli effetti"
+            : "Il microfono alimenta gli effetti; fallback disponibile se assente";
       }
 
       channel.addEventListener("message", (event) => {
@@ -199,13 +203,16 @@
 
         lastStateAt = Date.now();
         dot.classList.add("online");
-        connectionLabel.textContent = state.started ? state.audioMode : "player pronto";
+        connectionLabel.textContent = state.started
+          ? `${state.audioMode}${state.audioFileSyncEnabled ? " + file" : ""}`
+          : "player pronto";
         title.textContent = state.performance?.title || "REGIA";
         currentTitle.textContent = state.scene?.title || "—";
         nextTitle.textContent = state.nextScene?.title || "—";
         scenes = state.performance?.scenes || scenes;
         muted = Boolean(state.audioMuted);
         paused = Boolean(state.paused);
+        soloMicEnabled = Boolean(state.soloMicEnabled);
         audioFileSyncEnabled = Boolean(state.audioFileSyncEnabled);
         renderToggleStates();
         renderCues(state.scene?.index ?? -1);
@@ -220,10 +227,10 @@
         button.addEventListener("click", () => send(button.dataset.command));
       });
 
-      syncButton.addEventListener("click", () => {
-        audioFileSyncEnabled = !audioFileSyncEnabled;
+      soloMicButton.addEventListener("click", () => {
+        soloMicEnabled = !soloMicEnabled;
         renderToggleStates();
-        send("audio-file-sync", { active: audioFileSyncEnabled });
+        send("solo-mic", { active: soloMicEnabled });
       });
 
       muteButton.addEventListener("click", () => {
@@ -251,7 +258,7 @@
         if (event.key.toLowerCase() === "b") blackoutButton.click();
         if (event.key.toLowerCase() === "m") muteButton.click();
         if (event.key.toLowerCase() === "p") pauseButton.click();
-        if (event.key.toLowerCase() === "a") syncButton.click();
+        if (event.key.toLowerCase() === "i") soloMicButton.click();
       });
 
       setInterval(() => {
