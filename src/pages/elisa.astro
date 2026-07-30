@@ -37,6 +37,26 @@ const fallbackVideo = `${import.meta.env.BASE_URL}elisa/videos/video-01.mp4`;
 
     <script>
       import "../scripts/main.js";
+      import SubtitleManager from "../scripts/SubtitleManager.js";
+
+      const subtitles = new SubtitleManager();
+
+      window.addEventListener("reactive-archive:scene-change", (event) => {
+        subtitles.setScene(event.detail?.scene ?? null);
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key.toLowerCase() !== "s") return;
+        const enabled = subtitles.toggle();
+        console.info(`Sottotitoli ${enabled ? "attivi" : "disattivati"}`);
+      });
+
+      function updateSubtitles() {
+        requestAnimationFrame(updateSubtitles);
+        subtitles.update();
+      }
+
+      updateSubtitles();
     </script>
   </body>
 </html>
