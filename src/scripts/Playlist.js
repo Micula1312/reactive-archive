@@ -4,7 +4,22 @@ import {
   performanceRegia
 } from "./PerformanceRegia.js";
 
-export const playlist = [
+const performance =
+  document.body?.dataset.performance ||
+  (window.location.pathname.endsWith("/elisa") ? "elisa" : "fmcp");
+
+const fmcpPlaylist = [
+  {
+    title: "Video 01",
+    src: "/reactive-archive/video-01.mp4"
+  },
+  {
+    title: "Video 02",
+    src: "/reactive-archive/video-02.mp4"
+  }
+];
+
+const elisaPlaylist = [
   {
     title: "HYDRA I — Apparizione",
     src: "/reactive-archive/video-01.mp4",
@@ -17,14 +32,27 @@ export const playlist = [
   }
 ];
 
+export const playlist =
+  performance === "elisa"
+    ? elisaPlaylist
+    : fmcpPlaylist;
+
 export { performanceRegia };
 
 const subtitleManager =
   new SubtitleManager();
 
+subtitleManager.setEnabled(
+  performance === "elisa"
+);
+
 let currentScene = null;
 
 function findSceneFromVideo(video) {
+  if (performance !== "elisa") {
+    return null;
+  }
+
   const currentPath =
     new URL(video.currentSrc || video.src, window.location.href).pathname;
 
@@ -96,6 +124,7 @@ function connectSubtitleLayer() {
   window.performanceSubtitles = {
     manager: subtitleManager,
     regia: performanceRegia,
+    performance,
     setScene(order) {
       const scene = getPerformanceScene(order);
       currentScene = scene;
