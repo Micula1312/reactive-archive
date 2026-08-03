@@ -25,7 +25,7 @@ const fallbackVideo = `${basePath}elisa/videos/video-01.mp4`;
         <p class="debug-help">H pannello · A reactive · M mic/fake · B blackout · S sottotitoli</p>
       </aside>
 
-      <nav id="mobile-scene-controls" aria-label="Controlli scene" hidden>
+      <nav id="mobile-scene-controls" aria-label="Controlli scene">
         <button id="mobile-scene-previous" type="button" aria-label="Scena precedente">←</button>
         <button id="mobile-scene-next" type="button" aria-label="Scena successiva">→</button>
       </nav>
@@ -52,6 +52,7 @@ const fallbackVideo = `${basePath}elisa/videos/video-01.mp4`;
       const nextButton = document.querySelector("#mobile-scene-next");
       const app = document.querySelector("#app");
       const startScreen = document.querySelector("#start-screen");
+      const startButton = document.querySelector("#start-button");
 
       let controlsTimer = 0;
 
@@ -68,28 +69,36 @@ const fallbackVideo = `${basePath}elisa/videos/video-01.mp4`;
         if (!(controls instanceof HTMLElement)) return;
         if (startScreen instanceof HTMLElement && !startScreen.hidden) return;
 
-        controls.hidden = false;
         controls.classList.add("is-visible");
         window.clearTimeout(controlsTimer);
         controlsTimer = window.setTimeout(hideMobileControls, 3000);
       }
 
       previousButton?.addEventListener("click", (event) => {
+        event.preventDefault();
         event.stopPropagation();
         triggerSceneKey("ArrowLeft");
         showMobileControls();
       });
 
       nextButton?.addEventListener("click", (event) => {
+        event.preventDefault();
         event.stopPropagation();
         triggerSceneKey("ArrowRight");
         showMobileControls();
       });
 
-      app?.addEventListener("pointerup", (event) => {
+      const revealControls = (event) => {
         const target = event.target;
         if (target instanceof Element && target.closest("#mobile-scene-controls")) return;
         showMobileControls();
+      };
+
+      app?.addEventListener("touchstart", revealControls, { passive: true });
+      app?.addEventListener("click", revealControls);
+
+      startButton?.addEventListener("click", () => {
+        window.setTimeout(showMobileControls, 250);
       });
 
       window.addEventListener("reactive-archive:scene-change", (event) => {
@@ -134,18 +143,21 @@ const fallbackVideo = `${basePath}elisa/videos/video-01.mp4`;
   #mobile-scene-controls {
     position: fixed;
     inset: 0;
-    z-index: 8;
+    z-index: 9;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
     opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition: opacity 220ms ease;
+    transition: opacity 220ms ease, visibility 220ms ease;
   }
 
-  #mobile-scene-controls[hidden] { display: none; }
-  #mobile-scene-controls.is-visible { opacity: 1; pointer-events: none; }
+  #mobile-scene-controls.is-visible {
+    opacity: 1;
+    visibility: visible;
+  }
 
   #mobile-scene-controls button {
     width: 64px;
@@ -170,7 +182,7 @@ const fallbackVideo = `${basePath}elisa/videos/video-01.mp4`;
     transform: scale(0.94);
   }
 
-  @media (hover: hover) and (pointer: fine) {
+  @media (min-width: 901px) and (hover: hover) and (pointer: fine) {
     #mobile-scene-controls { display: none !important; }
   }
 </style>
