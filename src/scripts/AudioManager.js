@@ -23,6 +23,35 @@ export default class AudioManager {
     this.mid = 0;
     this.high = 0;
     this.fakeStartTime = performance.now();
+
+    this.handleManualSceneNavigation = (event) => {
+      const seconds = this.parseTimecode(event.detail?.start);
+      if (!this.cueTrack || !Number.isFinite(seconds)) return;
+
+      try {
+        this.cueAudio.currentTime = Math.max(0, seconds + 0.01);
+      } catch (error) {
+        console.warn("Impossibile sincronizzare la timeline con la scena.", error);
+      }
+    };
+
+    window.addEventListener(
+      "reactive-archive:manual-scene-navigation",
+      this.handleManualSceneNavigation
+    );
+  }
+
+  parseTimecode(value) {
+    if (typeof value === "number") return value;
+
+    const parts = String(value ?? "0")
+      .split(":")
+      .map(Number);
+
+    if (parts.some((part) => !Number.isFinite(part))) return NaN;
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    return parts[0] || 0;
   }
 
   async ensureContext() {
