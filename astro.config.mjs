@@ -1,9 +1,9 @@
-﻿// @ts-check
+// @ts-check
 import { defineConfig } from "astro/config";
 
 export default defineConfig({
   site: "https://thearchiveoftheuntamed.xyz",
-  base: "/reactive-archive",
+  base: "/reactive-archive/",
 
   vite: {
     define: {

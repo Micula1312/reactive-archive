@@ -1,6 +1,8 @@
 ---
 const title = "Reactive Archive — Elisa";
-const fallbackVideo = `${import.meta.env.BASE_URL}elisa/videos/video-01.mp4`;
+
+const basePath = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+const fallbackVideo = `${basePath}elisa/videos/video-01.mp4`;
 ---
 
 <html lang="it" data-performance="elisa">

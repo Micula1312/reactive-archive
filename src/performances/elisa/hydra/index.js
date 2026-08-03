@@ -29,7 +29,7 @@ export function genesis({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
     .out();
 }
 
-export function apparition({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
+export function intro({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
   const drift = () => Math.sin(time * 0.11) * (0.06 + mid * 0.12);
   const opening = () => 0.78 + Math.sin(time * (0.2 + bass * 0.42)) * (0.08 + level * 0.16);
 
@@ -87,37 +87,141 @@ export function resonance({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
     .out();
 }
 
-export function hypnosis({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
-  const rupture = () => Math.sin(time * 0.17) * (0.01 + high * 0.05);
+export function hypnosis({
+  level = 0,
+  bass = 0,
+  mid = 0,
+  high = 0
+} = {}) {
+  /*
+   * HYPNOSIS — WHITE RECTANGLE MULTIPLICATION
+   *
+   * Un rettangolo bianco nasce al centro.
+   * Il feedback lo duplica, lo comprime e lo distribuisce.
+   * L'audio aumenta il numero delle copie e la densità dei pixel.
+   */
 
+  const pulse = () =>
+    1 + Math.sin(time * (0.8 + mid * 4.0)) * (0.01 + bass * 0.06);
+
+  const driftX = () =>
+    Math.sin(time * (0.13 + mid * 0.35)) * (0.002 + high * 0.035);
+
+  const driftY = () =>
+    Math.cos(time * (0.11 + bass * 0.28)) * (0.002 + mid * 0.025);
+
+  const columns = () =>
+    2 + Math.floor(level * 8 + high * 18);
+
+  const rows = () =>
+    2 + Math.floor(level * 6 + mid * 14);
+
+  const pixelX = () =>
+    18 + Math.floor(level * 100 + high * 260);
+
+  const pixelY = () =>
+    12 + Math.floor(level * 80 + bass * 180);
+
+  /*
+   * Rettangolo generatore:
+   * shape(4) crea la forma quadrangolare;
+   * scale la trasforma in un rettangolo orizzontale.
+   */
+  const rectangle = shape(4, 0.18, 0.001)
+    .scale(1, 1.8, 0.42)
+    .rotate(Math.PI / 4)
+    .color(1, 1, 1)
+    .contrast(2.5);
+
+  /*
+   * Flash bianco:
+   * compare con maggiore intensità sui transienti alti.
+   */
+  const flash = solid(1, 1, 1)
+    .mult(
+      osc(
+        () => 2 + high * 12,
+        () => 0.02 + high * 0.4,
+        0
+      )
+      .thresh(() => 0.93 - high * 0.36)
+    )
+    .brightness(() => high * 1.8 + bass * 0.45);
+
+  /*
+   * Feedback:
+   * ogni frame riutilizza quello precedente,
+   * moltiplicando progressivamente il rettangolo.
+   */
   src(o0)
-    .scale(1.01 + bass * 0.07)
-    .rotate(() => 0.002 + mid * 0.045 + rupture())
-    .scrollX(() => Math.sin(time * 0.21) * high * 0.045)
-    .pixelate(8 + high * 190, 7 + level * 150)
-    .modulate(noise(4 + high * 18, 0.22 + level * 1.25), 0.18 + bass * 0.9)
-    .add(
-      osc(12 + high * 78, 0.12 + level * 1.8, 1.4)
-        .rotate(() => time * (0.035 + mid * 0.2))
-        .thresh(0.54 - bass * 0.25)
-        .color(...red(mid, high)),
-      0.16 + high * 0.4
+    .scale(pulse)
+    .scrollX(driftX)
+    .scrollY(driftY)
+
+    // Duplica l'immagine in griglia.
+    .repeat(columns, rows)
+
+    // Alterna e specchia le copie.
+    .modulateRepeat(
+      osc(
+        () => 1 + mid * 5,
+        () => 0.015 + level * 0.08,
+        0
+      ),
+      () => 1 + high * 5,
+      () => 1 + bass * 4,
+      () => high * 0.08,
+      () => mid * 0.06
     )
+
+    // Riduce tutto progressivamente a blocchi digitali.
+    .pixelate(pixelX, pixelY)
+
+    // Inserisce continuamente il rettangolo originario.
+    .add(
+      rectangle
+        .scale(() => 1 + bass * 0.22)
+        .brightness(() => level * 0.25),
+      () => 0.22 + level * 0.3
+    )
+
+    // Genera una seconda griglia più rapida e instabile.
+    .add(
+      rectangle
+        .repeat(
+          () => 3 + Math.floor(high * 24),
+          () => 2 + Math.floor(mid * 18)
+        )
+        .scrollX(() => time * (0.005 + high * 0.06))
+        .scrollY(() => -time * (0.003 + mid * 0.035))
+        .pixelate(
+          () => 12 + high * 160,
+          () => 8 + bass * 120
+        ),
+      () => 0.05 + high * 0.28
+    )
+
+    // Flash audioreattivo.
+    .add(
+      flash,
+      () => Math.max(0, high - 0.48) * 1.35
+    )
+
+    // Brevi inversioni luminose sui bassi.
     .diff(
-      shape(3 + Math.floor(mid * 9), 0.14 + bass * 0.22, 0.02)
-        .repeat(3 + Math.floor(high * 9), 2 + Math.floor(high * 7))
-        .rotate(() => time * 0.1),
-      0.1 + level * 0.32
+      rectangle
+        .scale(() => 0.6 + bass * 2.8)
+        .repeat(
+          () => 1 + Math.floor(bass * 12),
+          () => 1 + Math.floor(bass * 9)
+        ),
+      () => Math.max(0, bass - 0.58) * 0.65
     )
-    .add(
-      voronoi(8 + high * 20, 0.2 + level * 0.7, 0.1 + mid * 0.5)
-        .thresh(0.7 - bass * 0.25)
-        .color(...white(level)),
-      0.04 + high * 0.16
-    )
-    .contrast(1.85 + level * 3.2)
-    .saturate(1.45 + high * 1.8)
-    .out();
+
+    .contrast(() => 1.4 + level * 2.8 + high * 1.6)
+    .saturate(0)
+    .brightness(() => -0.08 + bass * 0.12)
+    .out(o0);
 }
 
 export function crossing({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
@@ -162,4 +266,4 @@ export function farewell({ level = 0, bass = 0, mid = 0, high = 0 } = {}) {
     .out();
 }
 
-export default { genesis, apparition, resonance, hypnosis, crossing, farewell };
+export default { intro, genesis, resonance, hypnosis, crossing, farewell };
