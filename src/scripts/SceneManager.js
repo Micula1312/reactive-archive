@@ -57,8 +57,6 @@ export default class SceneManager {
 
     if (scene.src) sequence.push(scene.src);
 
-    // Le clip aggiuntive devono essere dichiarate esplicitamente nella partitura.
-    // In questo modo il player non prova più URL "-2" inesistenti e non genera 404.
     if (Array.isArray(scene.sequence)) {
       for (const src of scene.sequence) {
         if (src && !sequence.includes(src)) sequence.push(src);
@@ -179,6 +177,19 @@ export default class SceneManager {
     }));
   }
 
+  announceManualNavigation(index) {
+    const nextIndex = (index + this.scenes.length) % this.scenes.length;
+    const scene = this.scenes[nextIndex];
+
+    window.dispatchEvent(new CustomEvent("reactive-archive:manual-scene-navigation", {
+      detail: {
+        index: nextIndex,
+        start: scene?.start ?? 0,
+        scene
+      }
+    }));
+  }
+
   async load(index) {
     const nextIndex = (index + this.scenes.length) % this.scenes.length;
     const scene = this.scenes[nextIndex];
@@ -201,13 +212,26 @@ export default class SceneManager {
     return scene;
   }
 
-  next() { return this.load(this.currentIndex + 1); }
-  previous() { return this.load(this.currentIndex - 1); }
-  select(index) {
-    if (index < 0 || index >= this.scenes.length) return Promise.resolve(null);
+  next() {
+    const index = this.currentIndex + 1;
+    this.announceManualNavigation(index);
     return this.load(index);
   }
+
+  previous() {
+    const index = this.currentIndex - 1;
+    this.announceManualNavigation(index);
+    return this.load(index);
+  }
+
+  select(index) {
+    if (index < 0 || index >= this.scenes.length) return Promise.resolve(null);
+    this.announceManualNavigation(index);
+    return this.load(index);
+  }
+
   update(audioData) { this.currentController?.update?.(audioData); }
+
   restart() {
     if (this.currentController?.restart) return this.currentController.restart();
     this.videoSequenceIndex = 0;
