@@ -11,6 +11,20 @@ export default class HydraScene {
     this.parameters = this.scene.parameters ?? {};
     this.scene.parameters = this.parameters;
     this.lastPatchUpdate = 0;
+    this.handleCanvasPointerDown = this.handleCanvasPointerDown.bind(this);
+  }
+
+  handleCanvasPointerDown() {
+    const app = document.querySelector("#app");
+    if (!(app instanceof HTMLElement)) return;
+
+    app.dispatchEvent(
+      new MouseEvent("click", {
+        bubbles: true,
+        cancelable: true,
+        view: window
+      })
+    );
   }
 
   async enter() {
@@ -23,12 +37,21 @@ export default class HydraScene {
     Object.assign(canvas.style, {
       position: "fixed",
       inset: "0",
-      zIndex: "15",
+      zIndex: "5",
       width: "100vw",
       height: "100vh",
       display: "block",
-      background: "#000"
+      background: "#000",
+      touchAction: "manipulation"
     });
+
+    canvas.addEventListener("pointerdown", this.handleCanvasPointerDown, {
+      passive: true
+    });
+    canvas.addEventListener("touchstart", this.handleCanvasPointerDown, {
+      passive: true
+    });
+
     document.body.append(canvas);
     this.canvas = canvas;
 
@@ -78,6 +101,8 @@ export default class HydraScene {
       console.warn("HydraScene: impossibile arrestare gli output.", error);
     }
 
+    this.canvas?.removeEventListener("pointerdown", this.handleCanvasPointerDown);
+    this.canvas?.removeEventListener("touchstart", this.handleCanvasPointerDown);
     this.hydra = null;
     this.canvas?.remove();
     this.canvas = null;
