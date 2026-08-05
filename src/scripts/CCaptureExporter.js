@@ -3,6 +3,7 @@ import "ccapture.js/build/CCapture.all.min.js";
 const OUTPUT_WIDTH = 1920;
 const OUTPUT_HEIGHT = 1080;
 const OUTPUT_FPS = 30;
+const AUTO_SAVE_SECONDS = 300;
 
 function parseTimecode(value) {
   const parts = String(value ?? "0").split(":").map(Number);
@@ -149,15 +150,15 @@ export default class CCaptureExporter {
     this.capture = new Capture({
       format: "webm",
       framerate: OUTPUT_FPS,
-      quality: 100,
+      quality: 90,
       name: "elisa-ccapture-1920x1080-30fps",
       verbose: false,
       display: true,
-      autoSaveTime: 0
+      autoSaveTime: AUTO_SAVE_SECONDS
     });
 
     this.capture.start();
-    this.setStatus("CCapture 1920×1080 a 30 fps in corso…");
+    this.setStatus("CCapture 1920×1080 a 30 fps in corso — salvataggio ogni 5 minuti…");
     this.renderFrame();
   }
 
@@ -201,7 +202,7 @@ export default class CCaptureExporter {
     document.body.dataset.offlineExport = "false";
     this.button.disabled = false;
     this.setStatus(
-      "WebM CCapture salvato senza audio. Uniscilo a prima_parte.mp3 con FFmpeg per ottenere MP4."
+      "Blocchi WebM CCapture salvati senza audio. Uniscili e aggiungi prima_parte.mp3 con FFmpeg."
     );
   }
 }
