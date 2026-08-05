@@ -1,3 +1,5 @@
+import "./RegiaTimelineBootstrap.js";
+
 const OUTPUT_WIDTH = 1920;
 const OUTPUT_HEIGHT = 1080;
 const OUTPUT_FPS = 60;
