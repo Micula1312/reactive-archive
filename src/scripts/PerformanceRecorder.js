@@ -3,7 +3,6 @@ const OUTPUT_HEIGHT = 1080;
 const OUTPUT_FPS = 60;
 
 function parseTimecode(value) {
-  if (typeof value === "number") return value;
   const parts = String(value ?? "0").split(":").map(Number);
   if (parts.some((part) => !Number.isFinite(part))) return 0;
   if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
@@ -32,16 +31,11 @@ function waitFor(condition, timeout = 15000) {
     const startedAt = performance.now();
 
     function check() {
-      if (condition()) {
-        resolve();
-        return;
-      }
-
+      if (condition()) return resolve();
       if (performance.now() - startedAt > timeout) {
         reject(new Error("Timeout durante la preparazione della registrazione."));
         return;
       }
-
       requestAnimationFrame(check);
     }
 
@@ -61,12 +55,12 @@ export default class PerformanceRecorder {
     this.outputStream = null;
     this.mediaRecorder = null;
     this.captureVideo = null;
-    this.outputCanvas = null;
     this.animationFrame = 0;
     this.stopTimer = 0;
     this.chunks = [];
     this.format = null;
     this.recording = false;
+    this.rendering = false;
 
     this.start = this.start.bind(this);
     this.stop = this.stop.bind(this);
@@ -106,7 +100,7 @@ export default class PerformanceRecorder {
     });
   }
 
-  create1080pStream(displayStream) {
+  async create1080pStream(displayStream) {
     const video = document.createElement("video");
     video.srcObject = displayStream;
     video.muted = true;
@@ -116,24 +110,18 @@ export default class PerformanceRecorder {
     canvas.width = OUTPUT_WIDTH;
     canvas.height = OUTPUT_HEIGHT;
 
-    const context = canvas.getContext("2d", {
-      alpha: false,
-      desynchronized: true
-    });
-
+    const context = canvas.getContext("2d", { alpha: false, desynchronized: true });
     if (!context) throw new Error("Impossibile creare il canvas di registrazione.");
 
     const outputStream = canvas.captureStream(OUTPUT_FPS);
-    for (const audioTrack of displayStream.getAudioTracks()) {
-      outputStream.addTrack(audioTrack);
-    }
+    displayStream.getAudioTracks().forEach((track) => outputStream.addTrack(track));
 
     this.captureVideo = video;
-    this.outputCanvas = canvas;
     this.outputStream = outputStream;
+    this.rendering = true;
 
     const draw = () => {
-      if (!this.recording && !this.mediaRecorder) return;
+      if (!this.rendering) return;
 
       const sourceWidth = video.videoWidth || OUTPUT_WIDTH;
       const sourceHeight = video.videoHeight || OUTPUT_HEIGHT;
@@ -159,10 +147,9 @@ export default class PerformanceRecorder {
       this.animationFrame = requestAnimationFrame(draw);
     };
 
-    return video.play().then(() => {
-      draw();
-      return outputStream;
-    });
+    await video.play();
+    draw();
+    return outputStream;
   }
 
   async start() {
@@ -173,9 +160,7 @@ export default class PerformanceRecorder {
 
     try {
       this.displayStream = await this.requestDisplayStream();
-
-      const videoTrack = this.displayStream.getVideoTracks()[0];
-      videoTrack?.addEventListener("ended", () => this.stop());
+      this.displayStream.getVideoTracks()[0]?.addEventListener("ended", this.stop);
 
       const outputStream = await this.create1080pStream(this.displayStream);
       this.format = selectRecorderFormat();
@@ -210,7 +195,7 @@ export default class PerformanceRecorder {
 
       if (this.durationSeconds > 0) {
         this.stopTimer = window.setTimeout(
-          () => this.stop(),
+          this.stop,
           Math.ceil((this.durationSeconds + 1) * 1000)
         );
       }
@@ -236,7 +221,7 @@ export default class PerformanceRecorder {
 
   save() {
     const mimeType = this.mediaRecorder?.mimeType || this.format?.mimeType || "video/webm";
-    const extension = this.format?.extension || (mimeType.includes("mp4") ? "mp4" : "webm");
+    const extension = mimeType.includes("mp4") ? "mp4" : "webm";
     const blob = new Blob(this.chunks, { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -260,19 +245,18 @@ export default class PerformanceRecorder {
   }
 
   cleanup() {
+    this.rendering = false;
     cancelAnimationFrame(this.animationFrame);
     window.clearTimeout(this.stopTimer);
 
     this.displayStream?.getTracks().forEach((track) => track.stop());
     this.outputStream?.getTracks().forEach((track) => track.stop());
-
     if (this.captureVideo) this.captureVideo.srcObject = null;
 
     this.displayStream = null;
     this.outputStream = null;
     this.mediaRecorder = null;
     this.captureVideo = null;
-    this.outputCanvas = null;
     this.animationFrame = 0;
     this.stopTimer = 0;
     this.recording = false;
