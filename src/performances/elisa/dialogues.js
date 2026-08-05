@@ -1,7 +1,7 @@
 const cue = (time, end, text) => ({
   time,
   end,
-  speaker: "aicha",
+  speaker: "Elisa",
   text
 });
 
@@ -10,12 +10,21 @@ export default {
   // Score: 00:00 → 01:00
   // Cue times are seconds relative to the beginning of this scene.
   intro: [
-    cue(6, 14, "Can you hear me?"),
+    cue(11, 14, "Can you hear me?"),
     cue(15, 24, "Do not rush."),
     cue(
-      25,
-      40,
-      "Water has never been in a hurry.\nAnd yet, it has always arrived."
+      25,40,
+      "Water has never been in a hurry."
+    ),
+        cue(
+      41,
+      50,
+      "And yet, it has always arrived."
+    ),
+        cue(
+      51,
+      60,
+      "It has always arrived."
     )
   ],
 
