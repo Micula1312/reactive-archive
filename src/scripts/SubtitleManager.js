@@ -19,69 +19,67 @@ export default class SubtitleManager {
     style.textContent = `
       #performance-subtitles {
         position: fixed;
-        left: 50%;
-        bottom: clamp(34px, 7vh, 88px);
+        top: clamp(24px, 4vh, 48px);
+        left: clamp(20px, 3vw, 48px);
         z-index: 9998;
-        width: min(82vw, 980px);
-        transform: translateX(-50%);
+        width: min(38vw, 520px);
         pointer-events: none;
         opacity: 0;
-        transition: opacity 420ms steps(4, end), transform 420ms ease;
-        color: rgba(235, 255, 245, 0.98);
-        font-family: "Lucida Console", "IBM Plex Mono", "Courier New", monospace;
-        font-size: clamp(18px, 1.65vw, 30px);
-        font-weight: 400;
-        line-height: 1.45;
-        letter-spacing: 0.035em;
+        transition: opacity 280ms ease;
+        color: rgba(255, 255, 255, 0.98);
+        font-family: Helvetica, Arial, sans-serif;
+        font-size: clamp(16px, 1.15vw, 22px);
+        font-weight: 300;
+        line-height: 1.28;
+        letter-spacing: 0.01em;
         white-space: pre-line;
-        text-shadow: 0 0 14px rgba(80, 255, 180, 0.26), 0 2px 16px rgba(0, 0, 0, 0.9);
-      }
-
-      #performance-subtitles.is-visible { opacity: 1; }
-
-      #performance-subtitles .subtitle-window {
-        position: relative;
-        display: inline-block;
-        max-width: min(72vw, 860px);
-        padding: 18px 22px 20px;
-        border: 1px solid rgba(190, 255, 225, 0.72);
-        background: rgba(2, 8, 7, 0.78);
-        box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.52), inset 0 0 24px rgba(80, 255, 180, 0.035);
-        backdrop-filter: blur(5px);
         text-align: left;
       }
 
-      #performance-subtitles[data-speaker="voice"] { text-align: left; }
-      #performance-subtitles[data-speaker="aicha"] { text-align: right; }
+      #performance-subtitles.is-visible {
+        opacity: 1;
+      }
 
-      #performance-subtitles[data-speaker="aicha"] .subtitle-window {
-        border-color: rgba(255, 115, 125, 0.78);
-        color: rgba(255, 235, 238, 0.98);
-        text-shadow: 0 0 14px rgba(255, 60, 90, 0.24), 0 2px 16px rgba(0, 0, 0, 0.9);
+      #performance-subtitles .subtitle-window {
+        display: block;
+        max-width: 100%;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        text-align: left;
       }
 
       #performance-subtitles .subtitle-speaker {
         display: block;
-        margin-bottom: 0.85em;
-        padding-bottom: 0.55em;
-        border-bottom: 1px dashed currentColor;
-        font-size: 0.48em;
-        letter-spacing: 0.22em;
+        margin: 0 0 0.75em;
+        padding: 0;
+        border: 0;
+        font-size: 0.55em;
+        font-weight: 400;
+        letter-spacing: 0.18em;
+        line-height: 1;
         text-transform: uppercase;
         opacity: 0.72;
       }
 
-      #performance-subtitles .subtitle-speaker::before { content: "> "; }
-      #performance-subtitles .subtitle-text { display: block; }
-      #performance-subtitles .subtitle-text::after {
-        content: "_";
-        margin-left: 0.12em;
-        animation: subtitle-cursor 1s steps(1, end) infinite;
+      #performance-subtitles .subtitle-text {
+        display: block;
       }
 
-      @keyframes subtitle-cursor {
-        0%, 48% { opacity: 1; }
-        49%, 100% { opacity: 0; }
+      @media (max-width: 900px) {
+        #performance-subtitles {
+          top: max(24px, env(safe-area-inset-top));
+          left: max(20px, env(safe-area-inset-left));
+          width: min(76vw, 440px);
+          font-size: clamp(16px, 4.2vw, 18px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #performance-subtitles {
+          transition: none;
+        }
       }
     `;
 
@@ -210,7 +208,7 @@ export default class SubtitleManager {
       speakerElement.textContent = cue.label ?? this.formatSpeaker(cue.speaker);
       textElement.textContent = cue.text ?? "";
       this.element.classList.add("is-visible");
-    }, 220);
+    }, 180);
   }
 
   cancelPendingShow() {
@@ -225,7 +223,7 @@ export default class SubtitleManager {
   }
 
   formatSpeaker(speaker) {
-    if (speaker === "voice") return "VOCE";
+    if (speaker === "voice") return "VOICE";
     if (speaker === "aicha") return "AICHA";
     return speaker ? String(speaker).toUpperCase() : "";
   }
