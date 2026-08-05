@@ -4,14 +4,14 @@ export default class TextScene {
     this.video = video;
     this.renderer = renderer;
     this.element = null;
-    this.typingTimer = null;
-    this.cursorTimer = null;
   }
 
   async enter() {
     this.video.pause();
     this.video.style.visibility = "hidden";
-    this.renderer?.canvas?.style && (this.renderer.canvas.style.visibility = "hidden");
+    if (this.renderer?.canvas?.style) {
+      this.renderer.canvas.style.visibility = "hidden";
+    }
 
     const layer = document.createElement("section");
     layer.dataset.sceneLayer = "text";
@@ -19,66 +19,62 @@ export default class TextScene {
       position: "fixed",
       inset: "0",
       zIndex: "20",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      display: "grid",
+      placeItems: "center",
       boxSizing: "border-box",
       padding: "clamp(24px, 8vw, 140px)",
       overflow: "hidden",
       background: this.scene.background ?? "#000",
       color: this.scene.color ?? "#fff",
-      fontFamily: this.scene.fontFamily ?? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace"
+      fontFamily: this.scene.fontFamily ?? "Helvetica, Arial, sans-serif",
+      textAlign: "center"
     });
 
-    const text = document.createElement("pre");
-    Object.assign(text.style, {
-      width: "min(1100px, 100%)",
+    const titleGroup = document.createElement("div");
+    Object.assign(titleGroup.style, {
+      display: "grid",
+      gap: "clamp(10px, 1.4vw, 18px)",
+      justifyItems: "center",
+      opacity: "0",
+      transform: "translateY(8px)",
+      transition: "opacity 700ms ease, transform 700ms ease"
+    });
+
+    const heading = document.createElement("h1");
+    heading.textContent = this.scene.heading ?? this.scene.title ?? "";
+    Object.assign(heading.style, {
       margin: "0",
-      whiteSpace: "pre-wrap",
-      overflowWrap: "anywhere",
-      font: "inherit",
-      fontSize: this.scene.fontSize ?? "clamp(18px, 2.4vw, 38px)",
-      lineHeight: String(this.scene.lineHeight ?? 1.45),
-      letterSpacing: this.scene.letterSpacing ?? "0.02em"
+      fontSize: this.scene.headingSize ?? "clamp(44px, 8vw, 112px)",
+      fontWeight: "400",
+      lineHeight: "0.95",
+      letterSpacing: "-0.035em"
     });
 
-    const content = document.createElement("span");
-    const cursor = document.createElement("span");
-    cursor.textContent = this.scene.cursor === false ? "" : "█";
-    cursor.style.marginLeft = "0.12em";
+    const subtitle = document.createElement("p");
+    subtitle.textContent = this.scene.subtitle ?? "";
+    Object.assign(subtitle.style, {
+      margin: "0",
+      fontSize: this.scene.subtitleSize ?? "clamp(14px, 1.35vw, 22px)",
+      fontWeight: "300",
+      lineHeight: "1.3",
+      letterSpacing: "0.02em"
+    });
 
-    text.append(content, cursor);
-    layer.append(text);
+    titleGroup.append(heading);
+    if (subtitle.textContent) titleGroup.append(subtitle);
+    layer.append(titleGroup);
     document.body.append(layer);
     this.element = layer;
 
-    const source = String(this.scene.text ?? "");
-    const speed = Math.max(1, Number(this.scene.typingSpeed ?? 40));
-    let index = 0;
-
-    this.typingTimer = window.setInterval(() => {
-      index += 1;
-      content.textContent = source.slice(0, index);
-      if (index >= source.length) {
-        window.clearInterval(this.typingTimer);
-        this.typingTimer = null;
-      }
-    }, speed);
-
-    if (this.scene.cursor !== false) {
-      this.cursorTimer = window.setInterval(() => {
-        cursor.style.visibility = cursor.style.visibility === "hidden" ? "visible" : "hidden";
-      }, 500);
-    }
+    requestAnimationFrame(() => {
+      titleGroup.style.opacity = "1";
+      titleGroup.style.transform = "translateY(0)";
+    });
   }
 
   update() {}
 
   async exit() {
-    if (this.typingTimer) window.clearInterval(this.typingTimer);
-    if (this.cursorTimer) window.clearInterval(this.cursorTimer);
-    this.typingTimer = null;
-    this.cursorTimer = null;
     this.element?.remove();
     this.element = null;
   }
