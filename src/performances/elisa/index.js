@@ -29,7 +29,7 @@ export default {
       ...scene,
       src: clips[0] ?? resolvePublicAsset(scene.src),
       sequence: clips.slice(1),
-      text: scene.dialogue ? dialogues[scene.dialogue] : undefined,
+      subtitleCues: scene.dialogue ? dialogues[scene.dialogue] : undefined,
       patch: scene.module ? hydraModules[scene.module] : undefined
     };
   })
