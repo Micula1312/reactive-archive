@@ -1,4 +1,3 @@
-import "./CCaptureExporterBootstrap.js";
 import RegiaTimeline from "./RegiaTimeline.js";
 
 const performanceModules = import.meta.glob("../performances/*/index.js", { eager: true });
@@ -57,3 +56,9 @@ if (performanceScore?.timeline?.useAsClock) {
 
   window.addEventListener("beforeunload", () => cancelAnimationFrame(frame));
 }
+
+// L'export frame-by-frame è sperimentale e non deve mai impedire
+// l'inizializzazione del recorder realtime o della performance.
+import("./CCaptureExporterBootstrap.js").catch((error) => {
+  console.warn("Export frame-by-frame non disponibile; REC realtime resta attivo.", error);
+});
