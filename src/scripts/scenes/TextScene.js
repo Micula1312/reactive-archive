@@ -4,6 +4,16 @@ export default class TextScene {
     this.video = video;
     this.renderer = renderer;
     this.element = null;
+    this.titleTimer = 0;
+    this.countdownTimer = 0;
+    this.sceneStartedAt = 0;
+  }
+
+  formatCountdown(seconds) {
+    const safeSeconds = Math.max(0, Math.ceil(seconds));
+    const minutes = Math.floor(safeSeconds / 60);
+    const remainder = safeSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
   }
 
   async enter() {
@@ -32,7 +42,10 @@ export default class TextScene {
 
     const titleGroup = document.createElement("div");
     Object.assign(titleGroup.style, {
+      position: "absolute",
+      inset: "0",
       display: "grid",
+      placeContent: "center",
       gap: "clamp(10px, 1.4vw, 18px)",
       justifyItems: "center",
       opacity: "0",
@@ -60,21 +73,68 @@ export default class TextScene {
       letterSpacing: "0.02em"
     });
 
+    const countdown = document.createElement("time");
+    const countdownSeconds = Math.max(0, Number(this.scene.countdownSeconds ?? 0));
+    Object.assign(countdown.style, {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      transform: "translate(-50%, -50%)",
+      margin: "0",
+      opacity: "0",
+      color: this.scene.color ?? "#fff",
+      fontFamily: this.scene.countdownFontFamily ?? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+      fontSize: this.scene.countdownSize ?? "clamp(34px, 6vw, 86px)",
+      fontWeight: "300",
+      lineHeight: "1",
+      letterSpacing: "0.08em",
+      fontVariantNumeric: "tabular-nums",
+      transition: "opacity 600ms ease"
+    });
+    countdown.textContent = this.formatCountdown(countdownSeconds);
+
     titleGroup.append(heading);
     if (subtitle.textContent) titleGroup.append(subtitle);
-    layer.append(titleGroup);
+    layer.append(titleGroup, countdown);
     document.body.append(layer);
     this.element = layer;
+    this.sceneStartedAt = performance.now();
 
     requestAnimationFrame(() => {
       titleGroup.style.opacity = "1";
       titleGroup.style.transform = "translateY(0)";
     });
+
+    const titleDuration = Math.max(0, Number(this.scene.titleDuration ?? 5));
+    this.titleTimer = window.setTimeout(() => {
+      titleGroup.style.opacity = "0";
+      titleGroup.style.transform = "translateY(-8px)";
+
+      window.setTimeout(() => {
+        if (!this.element) return;
+        titleGroup.style.display = "none";
+        if (countdownSeconds > 0) countdown.style.opacity = "1";
+      }, 700);
+    }, titleDuration * 1000);
+
+    if (countdownSeconds > 0) {
+      const updateCountdown = () => {
+        const elapsed = (performance.now() - this.sceneStartedAt) / 1000;
+        countdown.textContent = this.formatCountdown(countdownSeconds - elapsed);
+      };
+
+      updateCountdown();
+      this.countdownTimer = window.setInterval(updateCountdown, 100);
+    }
   }
 
   update() {}
 
   async exit() {
+    window.clearTimeout(this.titleTimer);
+    window.clearInterval(this.countdownTimer);
+    this.titleTimer = 0;
+    this.countdownTimer = 0;
     this.element?.remove();
     this.element = null;
   }
