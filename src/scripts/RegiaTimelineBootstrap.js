@@ -1,3 +1,4 @@
+import "./CCaptureExporterBootstrap.js";
 import RegiaTimeline from "./RegiaTimeline.js";
 
 const performanceModules = import.meta.glob("../performances/*/index.js", { eager: true });
