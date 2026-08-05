@@ -6,19 +6,20 @@ const cue = (time, end, text) => ({
 });
 
 export default {
-  // HYDRA I — Intro
+  // TEXT INTRO
   // Score: 00:00 → 01:00
+  // Cue times are seconds relative to the beginning of this scene.
   intro: [
-    cue(3, 12, "Can you hear me?"),
-    cue(18, 30, "Do not rush."),
+    cue(6, 14, "Can you hear me?"),
+    cue(15, 24, "Do not rush."),
     cue(
-      36,
-      56,
+      25,
+      40,
       "Water has never been in a hurry.\nAnd yet, it has always arrived."
     )
   ],
 
-  // HYDRA II — Genesis
+  // HYDRA I — Intro visual / Genesis dialogue
   // Score: 03:30 → 06:30
   genesis: [
     cue(
@@ -48,7 +49,7 @@ export default {
     )
   ],
 
-  // HYDRA III — Hypnosis
+  // HYDRA II — Hypnosis
   // Score: 11:20 → 13:10
   hypnosis: [
     cue(
@@ -93,7 +94,7 @@ export default {
     )
   ],
 
-  // HYDRA IV — Resonance
+  // HYDRA III — Resonance
   // Score: 18:20 → 20:50
   resonance: [
     cue(
@@ -187,7 +188,7 @@ export default {
     )
   ],
 
-  // HYDRA V — Farewell
+  // HYDRA IV — Farewell
   // Score: 23:40 → 25:00
   farewell: [
     cue(
