@@ -2,7 +2,7 @@ import "./RegiaTimelineBootstrap.js";
 
 const OUTPUT_WIDTH = 1920;
 const OUTPUT_HEIGHT = 1080;
-const OUTPUT_FPS = 60;
+const OUTPUT_FPS = 30;
 
 function parseTimecode(value) {
   const parts = String(value ?? "0").split(":").map(Number);
@@ -122,30 +122,38 @@ export default class PerformanceRecorder {
     this.outputStream = outputStream;
     this.rendering = true;
 
-    const draw = () => {
+    const frameInterval = 1000 / OUTPUT_FPS;
+    let lastFrameTime = 0;
+
+    const draw = (timestamp = 0) => {
       if (!this.rendering) return;
 
-      const sourceWidth = video.videoWidth || OUTPUT_WIDTH;
-      const sourceHeight = video.videoHeight || OUTPUT_HEIGHT;
-      const sourceRatio = sourceWidth / sourceHeight;
-      const outputRatio = OUTPUT_WIDTH / OUTPUT_HEIGHT;
+      if (timestamp - lastFrameTime >= frameInterval) {
+        lastFrameTime = timestamp;
 
-      let sx = 0;
-      let sy = 0;
-      let sw = sourceWidth;
-      let sh = sourceHeight;
+        const sourceWidth = video.videoWidth || OUTPUT_WIDTH;
+        const sourceHeight = video.videoHeight || OUTPUT_HEIGHT;
+        const sourceRatio = sourceWidth / sourceHeight;
+        const outputRatio = OUTPUT_WIDTH / OUTPUT_HEIGHT;
 
-      if (sourceRatio > outputRatio) {
-        sw = sourceHeight * outputRatio;
-        sx = (sourceWidth - sw) / 2;
-      } else if (sourceRatio < outputRatio) {
-        sh = sourceWidth / outputRatio;
-        sy = (sourceHeight - sh) / 2;
+        let sx = 0;
+        let sy = 0;
+        let sw = sourceWidth;
+        let sh = sourceHeight;
+
+        if (sourceRatio > outputRatio) {
+          sw = sourceHeight * outputRatio;
+          sx = (sourceWidth - sw) / 2;
+        } else if (sourceRatio < outputRatio) {
+          sh = sourceWidth / outputRatio;
+          sy = (sourceHeight - sh) / 2;
+        }
+
+        context.fillStyle = "#000";
+        context.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+        context.drawImage(video, sx, sy, sw, sh, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
       }
 
-      context.fillStyle = "#000";
-      context.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
-      context.drawImage(video, sx, sy, sw, sh, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
       this.animationFrame = requestAnimationFrame(draw);
     };
 
@@ -169,7 +177,7 @@ export default class PerformanceRecorder {
       this.chunks = [];
 
       const options = {
-        videoBitsPerSecond: 16_000_000,
+        videoBitsPerSecond: 10_000_000,
         audioBitsPerSecond: 256_000
       };
       if (this.format.mimeType) options.mimeType = this.format.mimeType;
@@ -230,7 +238,7 @@ export default class PerformanceRecorder {
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
     link.href = url;
-    link.download = `elisa-performance-1920x1080-${timestamp}.${extension}`;
+    link.download = `elisa-performance-1920x1080-30fps-${timestamp}.${extension}`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -241,8 +249,8 @@ export default class PerformanceRecorder {
     this.button.disabled = false;
     this.setStatus(
       extension === "mp4"
-        ? "Registrazione MP4 1920×1080 salvata."
-        : "Registrazione 1920×1080 salvata in WebM: converti in MP4 con FFmpeg."
+        ? "Registrazione MP4 1920×1080 a 30 fps salvata."
+        : "Registrazione 1920×1080 a 30 fps salvata in WebM: converti in MP4 con FFmpeg."
     );
   }
 
