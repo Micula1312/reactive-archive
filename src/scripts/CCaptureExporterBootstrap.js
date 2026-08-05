@@ -1,4 +1,5 @@
 import CCaptureExporter from "./CCaptureExporter.js";
+import performanceScore from "../performances/elisa/index.js";
 
 function mountCCaptureExporter() {
   const actions = document.querySelector(".start-actions");
@@ -64,7 +65,7 @@ function mountCCaptureExporter() {
     startButton,
     startScreen,
     status,
-    duration: "25:00"
+    duration: performanceScore.duration
   });
 }
 
