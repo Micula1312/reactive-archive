@@ -1,14 +1,21 @@
 export default class SubtitleManager {
   constructor() {
+    if (window.__reactiveArchiveSubtitleManager) {
+      return window.__reactiveArchiveSubtitleManager;
+    }
+
     this.scene = null;
     this.cues = [];
     this.currentCueIndex = -1;
     this.enabled = true;
     this.sceneStartedAt = 0;
     this.pendingShowTimer = null;
+    this.lastToggleAt = 0;
 
     this.injectStyles();
     this.element = this.createLayer();
+
+    window.__reactiveArchiveSubtitleManager = this;
   }
 
   injectStyles() {
@@ -21,11 +28,12 @@ export default class SubtitleManager {
         position: fixed;
         top: clamp(24px, 4vh, 48px);
         left: clamp(20px, 3vw, 48px);
-        z-index: 9998;
+        z-index: 1000002;
         width: min(38vw, 520px);
         pointer-events: none;
         opacity: 0;
-        transition: opacity 240ms ease;
+        visibility: hidden;
+        transition: opacity 240ms ease, visibility 0s linear 240ms;
         color: rgba(255, 255, 255, 0.98);
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
         font-size: clamp(14px, 1vw, 19px);
@@ -38,6 +46,8 @@ export default class SubtitleManager {
 
       #performance-subtitles.is-visible {
         opacity: 1;
+        visibility: visible;
+        transition-delay: 0s;
       }
 
       #performance-subtitles .subtitle-window {
@@ -95,6 +105,9 @@ export default class SubtitleManager {
   }
 
   createLayer() {
+    const existing = document.querySelector("#performance-subtitles");
+    if (existing instanceof HTMLElement) return existing;
+
     const layer = document.createElement("div");
     layer.id = "performance-subtitles";
     layer.setAttribute("aria-live", "polite");
@@ -147,6 +160,10 @@ export default class SubtitleManager {
   }
 
   toggle() {
+    const now = performance.now();
+    if (now - this.lastToggleAt < 80) return this.enabled;
+    this.lastToggleAt = now;
+
     this.setEnabled(!this.enabled);
     if (this.enabled) this.currentCueIndex = -1;
     return this.enabled;
