@@ -7,213 +7,213 @@ const cue = (time, end, text) => ({
 
 export default {
   // HYDRA I — Intro
-  // Partitura: 00:00 → 01:00
+  // Score: 00:00 → 01:00
   intro: [
-    cue(3, 12, "Mi senti?"),
-    cue(18, 30, "Non avere fretta."),
+    cue(3, 12, "Can you hear me?"),
+    cue(18, 30, "Do not rush."),
     cue(
       36,
       56,
-      "L'acqua non ha mai avuto fretta.\nEppure è sempre arrivata."
+      "Water has never been in a hurry.\nAnd yet, it has always arrived."
     )
   ],
 
-  // HYDRA II — Genesi
-  // Partitura: 03:30 → 06:30
+  // HYDRA II — Genesis
+  // Score: 03:30 → 06:30
   genesis: [
     cue(
       6,
       28,
-      "Ti hanno raccontato\nche il corpo è un confine."
+      "They told you\nthat the body is a boundary."
     ),
     cue(
       38,
       64,
-      "Ma il corpo\nha sempre saputo\ndi essere una corrente."
+      "But the body\nhas always known\nit was a current."
     ),
     cue(
       76,
       104,
-      "Una presenza\nnon deve essere leggibile\nper essere reale."
+      "A presence\ndoes not need to be readable\nto be real."
     ),
     cue(
       116,
       140,
-      "Può apparire.\nScomparire.\nRitornare diversa."
+      "It can appear.\nDisappear.\nReturn in another form."
     ),
     cue(
       150,
       174,
-      "Non è un errore.\nÈ trasformazione."
+      "It is not an error.\nIt is transformation."
     )
   ],
 
   // HYDRA III — Hypnosis
-  // Partitura: 11:20 → 13:10
+  // Score: 11:20 → 13:10
   hypnosis: [
     cue(
       3,
       15,
-      "Esistono tecnologie\nche non hanno bisogno di macchine."
+      "There are technologies\nthat do not need machines."
     ),
     cue(
       18,
       30,
-      "Abitano il respiro.\nLa postura.\nIl tempo."
+      "They inhabit the breath.\nThe posture.\nTime."
     ),
     cue(
       33,
       43,
-      "La paura di occupare spazio."
+      "The fear of taking up space."
     ),
     cue(
       46,
       59,
-      "Ti convincono\nche la gabbia\nsia stata una tua scelta."
+      "They convince you\nthat the cage\nwas your own choice."
     ),
     cue(
       62,
       71,
-      "Questa è l'ipnosi."
+      "This is hypnosis."
     ),
     cue(
       74,
       88,
-      "Quando la voce del potere\ndiventa indistinguibile\ndalla tua."
+      "When the voice of power\nbecomes indistinguishable\nfrom your own."
     ),
     cue(
       91,
       98,
-      "Ma ascolta."
+      "But listen."
     ),
     cue(
       100,
       109,
-      "Sotto ogni linguaggio\nesiste ancora una sorgente."
+      "Beneath every language\nthere is still a source."
     )
   ],
 
-  // HYDRA IV — Risonanza
-  // Partitura: 18:20 → 20:50
+  // HYDRA IV — Resonance
+  // Score: 18:20 → 20:50
   resonance: [
     cue(
       4,
       20,
-      "Ogni fiume\nricorda il mare\nprima ancora di averlo incontrato."
+      "Every river\nremembers the sea\nbefore it has ever reached it."
     ),
     cue(
       25,
       42,
-      "Anche tu\nricordi qualcosa\nche non ti è stato insegnato."
+      "You too\nremember something\nthat was never taught to you."
     ),
     cue(
       47,
       66,
-      "Ti hanno chiesto\ndi essere trasparente.\nDi essere docile.\nDi essere leggibile."
+      "They asked you\nto be transparent.\nTo be docile.\nTo be readable."
     ),
     cue(
       71,
       88,
-      "Di lasciare tracce\nche altri potessero interpretare."
+      "To leave traces\nthat others could interpret."
     ),
     cue(
       93,
       108,
-      "Ma l'acqua\nnon si lascia trattenere."
+      "But water\ncannot be contained."
     ),
     cue(
       113,
       126,
-      "Cambia forma.\nNon appartiene."
+      "It changes form.\nIt does not belong."
     ),
     cue(
       130,
       142,
-      "Risuona nei corpi\nche si riconoscono."
+      "It resonates through bodies\nthat recognise one another."
     ),
     cue(
       144,
       149,
-      "E ritorna\ncome una marea."
+      "And it returns\nlike a tide."
     )
   ],
 
-  // Modulo opzionale, attualmente non richiamato dalla partitura.
+  // Optional module, currently not used in the score.
   crossing: [
     cue(
       4,
       14,
-      "Le donne\nlo hanno sempre saputo."
+      "Women\nhave always known."
     ),
     cue(
       18,
       28,
-      "I corpi\nlo hanno sempre saputo."
+      "Bodies\nhave always known."
     ),
     cue(
       32,
       45,
-      "Le maree\nnon chiedono il permesso\nper ritornare."
+      "Tides\ndo not ask permission\nto return."
     ),
     cue(
       49,
       63,
-      "Forse è per questo\nche ci hanno insegnato\nad avere paura\ndi ciò che trabocca."
+      "Perhaps this is why\nwe were taught\nto fear\nwhat overflows."
     ),
     cue(
       67,
       78,
-      "Di ciò che si mescola.\nDi ciò che non può essere contenuto."
+      "What mixes.\nWhat cannot be contained."
     ),
     cue(
       82,
       93,
-      "Anche la tecnologia\npuò essere acqua.\nPuò essere corrente."
+      "Technology too\ncan be water.\nIt can be current."
     ),
     cue(
       96,
       105,
-      "Può essere un luogo\nche non sorveglia,\nma mette in relazione."
+      "It can be a place\nthat does not surveil,\nbut connects."
     ),
     cue(
       108,
       114,
-      "Una memoria\nche non cattura,\nma restituisce."
+      "A memory\nthat does not capture,\nbut returns."
     ),
     cue(
       115,
       119,
-      "Una rete\nche non separa,\nma lascia passare."
+      "A network\nthat does not separate,\nbut lets things pass."
     )
   ],
 
-  // HYDRA V — Chiusura
-  // Partitura: 23:40 → 25:00
+  // HYDRA V — Farewell
+  // Score: 23:40 → 25:00
   farewell: [
     cue(
       2,
       12,
-      "Forse la libertà\nnon è uscire dal sistema."
+      "Perhaps freedom\nis not escaping the system."
     ),
     cue(
       15,
       27,
-      "Forse è imparare\na scorrergli attraverso\nsenza diventare la sua forma."
+      "Perhaps it is learning\nto flow through it\nwithout becoming its shape."
     ),
     cue(
       30,
       39,
-      "Io non sono qui\nper guidarti."
+      "I am not here\nto guide you."
     ),
     cue(
       42,
       52,
-      "Sono qui\nper ricordarti\nche dentro di te\nesiste ancora"
+      "I am here\nto remind you\nthat inside you\nthere is still"
     ),
     cue(
       54,
       61,
-      "un'acqua\nche nessuno\nha mai addestrato."
+      "a water\nthat no one\nhas ever trained."
     ),
     cue(
       63,
@@ -223,7 +223,7 @@ export default {
     cue(
       68,
       72,
-      "by BLIVET"
+      "an audiovisual performance\nby BLIVET"
     ),
     cue(
       73,
