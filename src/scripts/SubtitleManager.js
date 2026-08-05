@@ -25,13 +25,13 @@ export default class SubtitleManager {
         width: min(38vw, 520px);
         pointer-events: none;
         opacity: 0;
-        transition: opacity 280ms ease;
+        transition: opacity 240ms ease;
         color: rgba(255, 255, 255, 0.98);
-        font-family: Helvetica, Arial, sans-serif;
-        font-size: clamp(16px, 1.15vw, 22px);
-        font-weight: 300;
-        line-height: 1.28;
-        letter-spacing: 0.01em;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        font-size: clamp(14px, 1vw, 19px);
+        font-weight: 400;
+        line-height: 1.35;
+        letter-spacing: 0;
         white-space: pre-line;
         text-align: left;
       }
@@ -41,26 +41,30 @@ export default class SubtitleManager {
       }
 
       #performance-subtitles .subtitle-window {
-        display: block;
+        display: inline-block;
         max-width: 100%;
-        padding: 0;
+        padding: 12px 14px 13px;
         border: 0;
-        background: transparent;
+        background: #000;
         box-shadow: none;
         text-align: left;
       }
 
       #performance-subtitles .subtitle-speaker {
         display: block;
-        margin: 0 0 0.75em;
+        margin: 0 0 0.7em;
         padding: 0;
         border: 0;
-        font-size: 0.55em;
-        font-weight: 400;
-        letter-spacing: 0.18em;
+        font-size: 0.62em;
+        font-weight: 500;
+        letter-spacing: 0.14em;
         line-height: 1;
         text-transform: uppercase;
-        opacity: 0.72;
+        opacity: 0.7;
+      }
+
+      #performance-subtitles .subtitle-speaker::before {
+        content: "> ";
       }
 
       #performance-subtitles .subtitle-text {
@@ -71,8 +75,12 @@ export default class SubtitleManager {
         #performance-subtitles {
           top: max(24px, env(safe-area-inset-top));
           left: max(20px, env(safe-area-inset-left));
-          width: min(76vw, 440px);
-          font-size: clamp(16px, 4.2vw, 18px);
+          width: min(78vw, 440px);
+          font-size: clamp(14px, 3.7vw, 17px);
+        }
+
+        #performance-subtitles .subtitle-window {
+          padding: 10px 12px 11px;
         }
       }
 
@@ -208,7 +216,7 @@ export default class SubtitleManager {
       speakerElement.textContent = cue.label ?? this.formatSpeaker(cue.speaker);
       textElement.textContent = cue.text ?? "";
       this.element.classList.add("is-visible");
-    }, 180);
+    }, 150);
   }
 
   cancelPendingShow() {
