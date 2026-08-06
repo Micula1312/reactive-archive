@@ -2,7 +2,10 @@ import "./RegiaTimelineBootstrap.js";
 
 const OUTPUT_WIDTH = 1920;
 const OUTPUT_HEIGHT = 1080;
-const OUTPUT_FPS = 30;
+const OUTPUT_FPS = 25;
+const VIDEO_BITRATE = 7_000_000;
+const AUDIO_BITRATE = 192_000;
+const SEGMENT_SECONDS = 8 * 60;
 
 function parseTimecode(value) {
   const parts = String(value ?? "0").split(":").map(Number);
@@ -46,7 +49,7 @@ function waitFor(condition, timeout = 15000) {
 }
 
 export default class PerformanceRecorder {
-  constructor({ button, startButton, startScreen, status, duration = "25:00" }) {
+  constructor({ button, startButton, startScreen, status, duration = "32:27" }) {
     this.button = button;
     this.startButton = startButton;
     this.startScreen = startScreen;
@@ -59,10 +62,13 @@ export default class PerformanceRecorder {
     this.captureVideo = null;
     this.animationFrame = 0;
     this.stopTimer = 0;
+    this.segmentTimer = 0;
     this.chunks = [];
     this.format = null;
     this.recording = false;
     this.rendering = false;
+    this.segmentIndex = 1;
+    this.finishingAll = false;
 
     this.start = this.start.bind(this);
     this.stop = this.stop.bind(this);
@@ -162,6 +168,37 @@ export default class PerformanceRecorder {
     return outputStream;
   }
 
+  createRecorder() {
+    const options = {
+      videoBitsPerSecond: VIDEO_BITRATE,
+      audioBitsPerSecond: AUDIO_BITRATE
+    };
+    if (this.format?.mimeType) options.mimeType = this.format.mimeType;
+
+    const recorder = new MediaRecorder(this.outputStream, options);
+    recorder.addEventListener("dataavailable", (event) => {
+      if (event.data?.size) this.chunks.push(event.data);
+    });
+    recorder.addEventListener("stop", () => this.handleSegmentStopped());
+    return recorder;
+  }
+
+  startSegment() {
+    if (!this.recording || !this.outputStream) return;
+
+    this.chunks = [];
+    this.mediaRecorder = this.createRecorder();
+    this.mediaRecorder.start(1000);
+    this.setStatus(`REC 25 FPS — segmento ${this.segmentIndex}`);
+
+    window.clearTimeout(this.segmentTimer);
+    this.segmentTimer = window.setTimeout(() => {
+      if (this.recording && this.mediaRecorder?.state === "recording") {
+        this.mediaRecorder.stop();
+      }
+    }, SEGMENT_SECONDS * 1000);
+  }
+
   async start() {
     if (this.recording) return;
 
@@ -172,21 +209,10 @@ export default class PerformanceRecorder {
       this.displayStream = await this.requestDisplayStream();
       this.displayStream.getVideoTracks()[0]?.addEventListener("ended", this.stop);
 
-      const outputStream = await this.create1080pStream(this.displayStream);
+      await this.create1080pStream(this.displayStream);
       this.format = selectRecorderFormat();
-      this.chunks = [];
-
-      const options = {
-        videoBitsPerSecond: 10_000_000,
-        audioBitsPerSecond: 256_000
-      };
-      if (this.format.mimeType) options.mimeType = this.format.mimeType;
-
-      this.mediaRecorder = new MediaRecorder(outputStream, options);
-      this.mediaRecorder.addEventListener("dataavailable", (event) => {
-        if (event.data?.size) this.chunks.push(event.data);
-      });
-      this.mediaRecorder.addEventListener("stop", () => this.save());
+      this.segmentIndex = 1;
+      this.finishingAll = false;
 
       if (this.startScreen instanceof HTMLElement && !this.startScreen.hidden) {
         this.startButton?.click();
@@ -201,7 +227,7 @@ export default class PerformanceRecorder {
 
       this.recording = true;
       document.body.dataset.recording = "true";
-      this.mediaRecorder.start(1000);
+      this.startSegment();
 
       if (this.durationSeconds > 0) {
         this.stopTimer = window.setTimeout(
@@ -218,46 +244,63 @@ export default class PerformanceRecorder {
   }
 
   stop() {
-    if (!this.mediaRecorder || this.mediaRecorder.state === "inactive") {
+    if (!this.recording && !this.mediaRecorder) {
       this.cleanup();
       return;
     }
 
     this.recording = false;
+    this.finishingAll = true;
     document.body.dataset.recording = "false";
     window.clearTimeout(this.stopTimer);
-    this.mediaRecorder.stop();
+    window.clearTimeout(this.segmentTimer);
+
+    if (this.mediaRecorder?.state === "recording") {
+      this.mediaRecorder.stop();
+    } else {
+      this.cleanup();
+    }
   }
 
-  save() {
+  handleSegmentStopped() {
+    this.saveSegment();
+
+    if (this.finishingAll || !this.recording) {
+      this.cleanup();
+      this.button.disabled = false;
+      this.setStatus("Registrazione completata: segmenti 25 FPS salvati.");
+      return;
+    }
+
+    this.segmentIndex += 1;
+    this.startSegment();
+  }
+
+  saveSegment() {
+    if (!this.chunks.length) return;
+
     const mimeType = this.mediaRecorder?.mimeType || this.format?.mimeType || "video/webm";
     const extension = mimeType.includes("mp4") ? "mp4" : "webm";
     const blob = new Blob(this.chunks, { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const part = String(this.segmentIndex).padStart(2, "0");
 
     link.href = url;
-    link.download = `elisa-performance-1920x1080-30fps-${timestamp}.${extension}`;
+    link.download = `elisa-performance-1920x1080-25fps-part-${part}.${extension}`;
     document.body.append(link);
     link.click();
     link.remove();
 
+    this.chunks = [];
     window.setTimeout(() => URL.revokeObjectURL(url), 30000);
-    this.cleanup();
-
-    this.button.disabled = false;
-    this.setStatus(
-      extension === "mp4"
-        ? "Registrazione MP4 1920×1080 a 30 fps salvata."
-        : "Registrazione 1920×1080 a 30 fps salvata in WebM: converti in MP4 con FFmpeg."
-    );
   }
 
   cleanup() {
     this.rendering = false;
     cancelAnimationFrame(this.animationFrame);
     window.clearTimeout(this.stopTimer);
+    window.clearTimeout(this.segmentTimer);
 
     this.displayStream?.getTracks().forEach((track) => track.stop());
     this.outputStream?.getTracks().forEach((track) => track.stop());
@@ -269,7 +312,11 @@ export default class PerformanceRecorder {
     this.captureVideo = null;
     this.animationFrame = 0;
     this.stopTimer = 0;
+    this.segmentTimer = 0;
+    this.chunks = [];
     this.recording = false;
+    this.rendering = false;
+    this.finishingAll = false;
     document.body.dataset.recording = "false";
   }
 }
