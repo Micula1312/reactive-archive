@@ -6,6 +6,7 @@ const OUTPUT_FPS = 25;
 const VIDEO_BITRATE = 7_000_000;
 const AUDIO_BITRATE = 192_000;
 const SEGMENT_SECONDS = 8 * 60;
+const ELISA_DURATION_SECONDS = 32 * 60 + 27;
 
 function parseTimecode(value) {
   const parts = String(value ?? "0").split(":").map(Number);
@@ -54,7 +55,7 @@ export default class PerformanceRecorder {
     this.startButton = startButton;
     this.startScreen = startScreen;
     this.status = status;
-    this.durationSeconds = parseTimecode(duration);
+    this.durationSeconds = Math.max(parseTimecode(duration), ELISA_DURATION_SECONDS);
 
     this.displayStream = null;
     this.outputStream = null;
@@ -229,12 +230,10 @@ export default class PerformanceRecorder {
       document.body.dataset.recording = "true";
       this.startSegment();
 
-      if (this.durationSeconds > 0) {
-        this.stopTimer = window.setTimeout(
-          this.stop,
-          Math.ceil((this.durationSeconds + 1) * 1000)
-        );
-      }
+      this.stopTimer = window.setTimeout(
+        this.stop,
+        Math.ceil((this.durationSeconds + 1) * 1000)
+      );
     } catch (error) {
       console.error(error);
       this.cleanup();
