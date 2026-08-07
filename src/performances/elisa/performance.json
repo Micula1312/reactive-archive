@@ -179,10 +179,10 @@
     {
       "id": "archivio-3d",
       "order": 13,
-      "start": "19:40",
+      "start": "20:40",
       "title": "Archivio 3D",
       "type": "video",
-      "clips": ["/elisa/videos/12-Archivio-3D.mp4","/elisa/videos/Videofantasia.mp4" ],
+      "clips": ["/elisa/videos/12-Archivio-3D.mp4" ],
       "loop": true,
       "filter": {
         "preset": "defocus",
