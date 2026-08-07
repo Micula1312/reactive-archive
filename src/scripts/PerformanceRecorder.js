@@ -37,7 +37,7 @@ function waitFor(condition, timeout = 15000) {
     const startedAt = performance.now();
 
     function check() {
-      if (condition()) return resolve();
+      if (condition()) return resolve(condition());
       if (performance.now() - startedAt > timeout) {
         reject(new Error("Timeout durante la preparazione della registrazione."));
         return;
@@ -49,6 +49,114 @@ function waitFor(condition, timeout = 15000) {
   });
 }
 
+function isVisible(element) {
+  if (!(element instanceof HTMLElement)) return false;
+  const style = getComputedStyle(element);
+  return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
+}
+
+function drawCover(context, source, width, height) {
+  const sourceWidth = source.width || source.videoWidth || width;
+  const sourceHeight = source.height || source.videoHeight || height;
+  if (!sourceWidth || !sourceHeight) return;
+
+  const sourceRatio = sourceWidth / sourceHeight;
+  const targetRatio = width / height;
+  let sx = 0;
+  let sy = 0;
+  let sw = sourceWidth;
+  let sh = sourceHeight;
+
+  if (sourceRatio > targetRatio) {
+    sw = sourceHeight * targetRatio;
+    sx = (sourceWidth - sw) / 2;
+  } else if (sourceRatio < targetRatio) {
+    sh = sourceWidth / targetRatio;
+    sy = (sourceHeight - sh) / 2;
+  }
+
+  context.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
+}
+
+function drawDomText(context, element, { background = false } = {}) {
+  if (!(element instanceof HTMLElement) || !isVisible(element)) return;
+
+  const style = getComputedStyle(element);
+  const rect = element.getBoundingClientRect();
+  const scaleX = OUTPUT_WIDTH / Math.max(window.innerWidth, 1);
+  const scaleY = OUTPUT_HEIGHT / Math.max(window.innerHeight, 1);
+  const x = rect.left * scaleX;
+  const y = rect.top * scaleY;
+  const width = rect.width * scaleX;
+  const height = rect.height * scaleY;
+
+  const fontSize = Math.max(10, parseFloat(style.fontSize || "16") * scaleY);
+  const lineHeightRaw = parseFloat(style.lineHeight);
+  const lineHeight = Number.isFinite(lineHeightRaw) ? lineHeightRaw * scaleY : fontSize * 1.35;
+  const text = String(element.innerText || element.textContent || "").trim();
+  if (!text) return;
+
+  const lines = text.split("\n");
+  context.save();
+  context.globalAlpha = Number(style.opacity || 1);
+
+  if (background) {
+    context.fillStyle = "#000";
+    context.fillRect(x, y, Math.max(width, 2), Math.max(height, 2));
+  }
+
+  context.fillStyle = style.color || "#fff";
+  context.font = `${style.fontWeight || 400} ${fontSize}px ${style.fontFamily || "Arial"}`;
+  context.textBaseline = "top";
+  context.textAlign = style.textAlign === "center" ? "center" : "left";
+
+  const tx = context.textAlign === "center" ? x + width / 2 : x;
+  lines.forEach((line, index) => {
+    context.fillText(line, tx, y + index * lineHeight);
+  });
+
+  context.restore();
+}
+
+function drawTextScene(context) {
+  const layer = document.querySelector('[data-scene-layer="text"]');
+  if (!(layer instanceof HTMLElement) || !isVisible(layer)) return false;
+
+  context.fillStyle = getComputedStyle(layer).backgroundColor || "#000";
+  context.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+
+  layer.querySelectorAll("h1, p, time").forEach((element) => {
+    if (element instanceof HTMLElement) drawDomText(context, element);
+  });
+
+  return true;
+}
+
+function drawSubtitles(context) {
+  const layer = document.querySelector("#performance-subtitles");
+  if (!(layer instanceof HTMLElement) || !layer.classList.contains("is-visible") || !isVisible(layer)) return;
+
+  const windowElement = layer.querySelector(".subtitle-window");
+  const speaker = layer.querySelector(".subtitle-speaker");
+  const text = layer.querySelector(".subtitle-text");
+
+  if (windowElement instanceof HTMLElement && isVisible(windowElement)) {
+    const rect = windowElement.getBoundingClientRect();
+    const scaleX = OUTPUT_WIDTH / Math.max(window.innerWidth, 1);
+    const scaleY = OUTPUT_HEIGHT / Math.max(window.innerHeight, 1);
+    context.fillStyle = "#000";
+    context.fillRect(
+      rect.left * scaleX,
+      rect.top * scaleY,
+      rect.width * scaleX,
+      rect.height * scaleY
+    );
+  }
+
+  if (speaker instanceof HTMLElement) drawDomText(context, speaker);
+  if (text instanceof HTMLElement) drawDomText(context, text);
+}
+
 export default class PerformanceRecorder {
   constructor({ button, startButton, startScreen, status, duration = "32:27" }) {
     this.button = button;
@@ -57,10 +165,16 @@ export default class PerformanceRecorder {
     this.status = status;
     this.durationSeconds = Math.max(parseTimecode(duration), ELISA_DURATION_SECONDS);
 
-    this.displayStream = null;
+    this.masterCanvas = document.createElement("canvas");
+    this.masterCanvas.width = OUTPUT_WIDTH;
+    this.masterCanvas.height = OUTPUT_HEIGHT;
+    this.context = this.masterCanvas.getContext("2d", {
+      alpha: false,
+      desynchronized: true
+    });
+
     this.outputStream = null;
     this.mediaRecorder = null;
-    this.captureVideo = null;
     this.animationFrame = 0;
     this.stopTimer = 0;
     this.segmentTimer = 0;
@@ -70,10 +184,12 @@ export default class PerformanceRecorder {
     this.rendering = false;
     this.segmentIndex = 1;
     this.finishingAll = false;
+    this.lastFrameTime = 0;
 
     this.start = this.start.bind(this);
     this.stop = this.stop.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
+    this.draw = this.draw.bind(this);
 
     this.button?.addEventListener("click", this.start);
     window.addEventListener("keydown", this.handleKeydown);
@@ -89,84 +205,54 @@ export default class PerformanceRecorder {
     this.stop();
   }
 
-  async requestDisplayStream() {
-    if (!navigator.mediaDevices?.getDisplayMedia) {
-      throw new Error("Questo browser non supporta la registrazione della scheda.");
-    }
+  async getEngine() {
+    if (window.__reactiveArchiveEngine) return window.__reactiveArchiveEngine;
 
-    return navigator.mediaDevices.getDisplayMedia({
-      video: {
-        displaySurface: "browser",
-        width: { ideal: OUTPUT_WIDTH },
-        height: { ideal: OUTPUT_HEIGHT },
-        frameRate: { ideal: OUTPUT_FPS, max: OUTPUT_FPS }
-      },
-      audio: true,
-      preferCurrentTab: true,
-      selfBrowserSurface: "include",
-      surfaceSwitching: "exclude",
-      systemAudio: "include"
-    });
+    return waitFor(() => window.__reactiveArchiveEngine ?? null, 10000);
   }
 
-  async create1080pStream(displayStream) {
-    const video = document.createElement("video");
-    video.srcObject = displayStream;
-    video.muted = true;
-    video.playsInline = true;
+  getVisualCanvas() {
+    const hydraCanvas = document.querySelector('canvas[data-scene-layer="hydra"]');
+    if (hydraCanvas instanceof HTMLCanvasElement && isVisible(hydraCanvas)) return hydraCanvas;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = OUTPUT_WIDTH;
-    canvas.height = OUTPUT_HEIGHT;
+    const visualCanvas = document.querySelector("#visual-canvas");
+    if (visualCanvas instanceof HTMLCanvasElement && isVisible(visualCanvas)) return visualCanvas;
 
-    const context = canvas.getContext("2d", { alpha: false, desynchronized: true });
-    if (!context) throw new Error("Impossibile creare il canvas di registrazione.");
+    return null;
+  }
 
-    const outputStream = canvas.captureStream(OUTPUT_FPS);
-    displayStream.getAudioTracks().forEach((track) => outputStream.addTrack(track));
+  createOutputStream(audioStream) {
+    if (!this.masterCanvas.captureStream) {
+      throw new Error("Questo browser non supporta canvas.captureStream().");
+    }
 
-    this.captureVideo = video;
-    this.outputStream = outputStream;
-    this.rendering = true;
+    const stream = this.masterCanvas.captureStream(OUTPUT_FPS);
+    audioStream?.getAudioTracks?.().forEach((track) => stream.addTrack(track));
+    this.outputStream = stream;
+    return stream;
+  }
+
+  draw(timestamp = 0) {
+    if (!this.rendering || !this.context) return;
 
     const frameInterval = 1000 / OUTPUT_FPS;
-    let lastFrameTime = 0;
+    if (timestamp - this.lastFrameTime >= frameInterval) {
+      this.lastFrameTime = timestamp;
+      const context = this.context;
 
-    const draw = (timestamp = 0) => {
-      if (!this.rendering) return;
+      context.fillStyle = "#000";
+      context.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
 
-      if (timestamp - lastFrameTime >= frameInterval) {
-        lastFrameTime = timestamp;
-
-        const sourceWidth = video.videoWidth || OUTPUT_WIDTH;
-        const sourceHeight = video.videoHeight || OUTPUT_HEIGHT;
-        const sourceRatio = sourceWidth / sourceHeight;
-        const outputRatio = OUTPUT_WIDTH / OUTPUT_HEIGHT;
-
-        let sx = 0;
-        let sy = 0;
-        let sw = sourceWidth;
-        let sh = sourceHeight;
-
-        if (sourceRatio > outputRatio) {
-          sw = sourceHeight * outputRatio;
-          sx = (sourceWidth - sw) / 2;
-        } else if (sourceRatio < outputRatio) {
-          sh = sourceWidth / outputRatio;
-          sy = (sourceHeight - sh) / 2;
-        }
-
-        context.fillStyle = "#000";
-        context.fillRect(0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
-        context.drawImage(video, sx, sy, sw, sh, 0, 0, OUTPUT_WIDTH, OUTPUT_HEIGHT);
+      const textSceneDrawn = drawTextScene(context);
+      if (!textSceneDrawn) {
+        const visualCanvas = this.getVisualCanvas();
+        if (visualCanvas) drawCover(context, visualCanvas, OUTPUT_WIDTH, OUTPUT_HEIGHT);
       }
 
-      this.animationFrame = requestAnimationFrame(draw);
-    };
+      drawSubtitles(context);
+    }
 
-    await video.play();
-    draw();
-    return outputStream;
+    this.animationFrame = requestAnimationFrame(this.draw);
   }
 
   createRecorder() {
@@ -190,7 +276,7 @@ export default class PerformanceRecorder {
     this.chunks = [];
     this.mediaRecorder = this.createRecorder();
     this.mediaRecorder.start(1000);
-    this.setStatus(`REC 25 FPS — segmento ${this.segmentIndex}`);
+    this.setStatus(`REC DIRECT 25 FPS — segmento ${this.segmentIndex}`);
 
     window.clearTimeout(this.segmentTimer);
     this.segmentTimer = window.setTimeout(() => {
@@ -201,19 +287,13 @@ export default class PerformanceRecorder {
   }
 
   async start() {
-    if (this.recording) return;
+    if (this.recording || !this.context) return;
 
     this.button.disabled = true;
-    this.setStatus("Seleziona QUESTA SCHEDA e attiva Condividi audio della scheda.");
+    this.setStatus("Preparazione recorder diretto 1920×1080…");
 
     try {
-      this.displayStream = await this.requestDisplayStream();
-      this.displayStream.getVideoTracks()[0]?.addEventListener("ended", this.stop);
-
-      await this.create1080pStream(this.displayStream);
-      this.format = selectRecorderFormat();
-      this.segmentIndex = 1;
-      this.finishingAll = false;
+      const engine = await this.getEngine();
 
       if (this.startScreen instanceof HTMLElement && !this.startScreen.hidden) {
         this.startButton?.click();
@@ -224,10 +304,19 @@ export default class PerformanceRecorder {
         }));
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await waitFor(() => engine.audioManager?.getRecordingStream?.() ?? null, 10000);
+      const audioStream = engine.audioManager.getRecordingStream();
 
+      this.format = selectRecorderFormat();
+      this.segmentIndex = 1;
+      this.finishingAll = false;
       this.recording = true;
+      this.rendering = true;
+      this.lastFrameTime = 0;
       document.body.dataset.recording = "true";
+
+      this.createOutputStream(audioStream);
+      this.draw();
       this.startSegment();
 
       this.stopTimer = window.setTimeout(
@@ -267,7 +356,7 @@ export default class PerformanceRecorder {
     if (this.finishingAll || !this.recording) {
       this.cleanup();
       this.button.disabled = false;
-      this.setStatus("Registrazione completata: segmenti 25 FPS salvati.");
+      this.setStatus("Registrazione diretta completata: segmenti salvati.");
       return;
     }
 
@@ -286,7 +375,7 @@ export default class PerformanceRecorder {
     const part = String(this.segmentIndex).padStart(2, "0");
 
     link.href = url;
-    link.download = `elisa-performance-1920x1080-25fps-part-${part}.${extension}`;
+    link.download = `elisa-direct-1920x1080-25fps-part-${part}.${extension}`;
     document.body.append(link);
     link.click();
     link.remove();
@@ -301,21 +390,17 @@ export default class PerformanceRecorder {
     window.clearTimeout(this.stopTimer);
     window.clearTimeout(this.segmentTimer);
 
-    this.displayStream?.getTracks().forEach((track) => track.stop());
-    this.outputStream?.getTracks().forEach((track) => track.stop());
-    if (this.captureVideo) this.captureVideo.srcObject = null;
+    this.outputStream?.getVideoTracks().forEach((track) => track.stop());
 
-    this.displayStream = null;
     this.outputStream = null;
     this.mediaRecorder = null;
-    this.captureVideo = null;
     this.animationFrame = 0;
     this.stopTimer = 0;
     this.segmentTimer = 0;
     this.chunks = [];
     this.recording = false;
-    this.rendering = false;
     this.finishingAll = false;
+    this.lastFrameTime = 0;
     document.body.dataset.recording = "false";
   }
 }
