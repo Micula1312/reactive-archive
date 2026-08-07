@@ -62,6 +62,14 @@ const sceneManager = new SceneManager({
   performance: performanceScore
 });
 
+window.__reactiveArchiveEngine = {
+  audioManager,
+  sceneManager,
+  renderer: visualRenderer,
+  performance: performanceScore
+};
+window.dispatchEvent(new CustomEvent("reactive-archive:engine-ready"));
+
 const timeline = performanceScore.timeline?.useAsClock
   ? performanceScore.timeline
   : null;
@@ -343,7 +351,7 @@ async function startExperience() {
 
     ui.setStatus(
       timeline
-        ? "TIMELINE 15:00 — audioreattività dalla traccia"
+        ? `TIMELINE ${performanceScore.duration ?? ""} — audioreattività dalla traccia`
         : microphoneAvailable
           ? "LIVE — audioreattività dal microfono"
           : "AUTO — traccia scena + audioreattività"
@@ -399,4 +407,4 @@ ui.onRestartVideo(() => sceneManager.restart());
 ui.setAudioReactiveState(audioReactiveEnabled);
 
 performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
-ui.setStatus(timeline ? "Premi AVVIA: test timeline da 15 minuti." : "Premi AVVIA.");
+ui.setStatus(timeline ? `Premi AVVIA: timeline ${performanceScore.duration ?? ""}.` : "Premi AVVIA.");
