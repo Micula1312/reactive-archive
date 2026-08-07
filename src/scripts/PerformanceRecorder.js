@@ -37,7 +37,8 @@ function waitFor(condition, timeout = 15000) {
     const startedAt = performance.now();
 
     function check() {
-      if (condition()) return resolve(condition());
+      const result = condition();
+      if (result) return resolve(result);
       if (performance.now() - startedAt > timeout) {
         reject(new Error("Timeout durante la preparazione della registrazione."));
         return;
@@ -51,8 +52,16 @@ function waitFor(condition, timeout = 15000) {
 
 function isVisible(element) {
   if (!(element instanceof HTMLElement)) return false;
-  const style = getComputedStyle(element);
-  return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
+
+  let node = element;
+  while (node instanceof HTMLElement) {
+    const style = getComputedStyle(node);
+    if (style.display === "none" || style.visibility === "hidden") return false;
+    if (Number(style.opacity || 1) <= 0.01) return false;
+    node = node.parentElement;
+  }
+
+  return true;
 }
 
 function drawCover(context, source, width, height) {
@@ -78,7 +87,7 @@ function drawCover(context, source, width, height) {
   context.drawImage(source, sx, sy, sw, sh, 0, 0, width, height);
 }
 
-function drawDomText(context, element, { background = false } = {}) {
+function drawDomText(context, element) {
   if (!(element instanceof HTMLElement) || !isVisible(element)) return;
 
   const style = getComputedStyle(element);
@@ -88,7 +97,6 @@ function drawDomText(context, element, { background = false } = {}) {
   const x = rect.left * scaleX;
   const y = rect.top * scaleY;
   const width = rect.width * scaleX;
-  const height = rect.height * scaleY;
 
   const fontSize = Math.max(10, parseFloat(style.fontSize || "16") * scaleY);
   const lineHeightRaw = parseFloat(style.lineHeight);
@@ -98,13 +106,6 @@ function drawDomText(context, element, { background = false } = {}) {
 
   const lines = text.split("\n");
   context.save();
-  context.globalAlpha = Number(style.opacity || 1);
-
-  if (background) {
-    context.fillStyle = "#000";
-    context.fillRect(x, y, Math.max(width, 2), Math.max(height, 2));
-  }
-
   context.fillStyle = style.color || "#fff";
   context.font = `${style.fontWeight || 400} ${fontSize}px ${style.fontFamily || "Arial"}`;
   context.textBaseline = "top";
@@ -114,7 +115,6 @@ function drawDomText(context, element, { background = false } = {}) {
   lines.forEach((line, index) => {
     context.fillText(line, tx, y + index * lineHeight);
   });
-
   context.restore();
 }
 
@@ -185,6 +185,7 @@ export default class PerformanceRecorder {
     this.segmentIndex = 1;
     this.finishingAll = false;
     this.lastFrameTime = 0;
+    this.audioElement = null;
 
     this.start = this.start.bind(this);
     this.stop = this.stop.bind(this);
@@ -207,7 +208,6 @@ export default class PerformanceRecorder {
 
   async getEngine() {
     if (window.__reactiveArchiveEngine) return window.__reactiveArchiveEngine;
-
     return waitFor(() => window.__reactiveArchiveEngine ?? null, 10000);
   }
 
@@ -294,18 +294,12 @@ export default class PerformanceRecorder {
 
     try {
       const engine = await this.getEngine();
+      await engine.audioManager.ensureContext();
 
-      if (this.startScreen instanceof HTMLElement && !this.startScreen.hidden) {
-        this.startButton?.click();
-        await waitFor(() => this.startScreen.hidden === true);
-      } else {
-        window.dispatchEvent(new CustomEvent("reactive-archive:manual-scene-navigation", {
-          detail: { index: 0, start: "00:00" }
-        }));
-      }
-
-      await waitFor(() => engine.audioManager?.getRecordingStream?.() ?? null, 10000);
       const audioStream = engine.audioManager.getRecordingStream();
+      if (!audioStream?.getAudioTracks?.().length) {
+        throw new Error("Stream audio interno non disponibile.");
+      }
 
       this.format = selectRecorderFormat();
       this.segmentIndex = 1;
@@ -319,9 +313,21 @@ export default class PerformanceRecorder {
       this.draw();
       this.startSegment();
 
+      this.audioElement = engine.audioManager.cueAudio ?? null;
+      this.audioElement?.addEventListener("ended", this.stop, { once: true });
+
+      if (this.startScreen instanceof HTMLElement && !this.startScreen.hidden) {
+        this.startButton?.click();
+        await waitFor(() => this.startScreen.hidden === true);
+      } else {
+        window.dispatchEvent(new CustomEvent("reactive-archive:manual-scene-navigation", {
+          detail: { index: 0, start: "00:00" }
+        }));
+      }
+
       this.stopTimer = window.setTimeout(
         this.stop,
-        Math.ceil((this.durationSeconds + 1) * 1000)
+        Math.ceil((this.durationSeconds + 2) * 1000)
       );
     } catch (error) {
       console.error(error);
@@ -390,6 +396,8 @@ export default class PerformanceRecorder {
     window.clearTimeout(this.stopTimer);
     window.clearTimeout(this.segmentTimer);
 
+    this.audioElement?.removeEventListener("ended", this.stop);
+    this.audioElement = null;
     this.outputStream?.getVideoTracks().forEach((track) => track.stop());
 
     this.outputStream = null;
