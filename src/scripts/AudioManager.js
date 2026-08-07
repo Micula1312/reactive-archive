@@ -3,6 +3,7 @@ export default class AudioManager {
     this.audioContext = null;
     this.analyser = null;
     this.outputGain = null;
+    this.recordingDestination = null;
     this.stream = null;
     this.microphoneSource = null;
     this.sourceNode = null;
@@ -71,6 +72,10 @@ export default class AudioManager {
       this.outputGain.gain.value = this.outputMuted ? 0 : 1;
       this.outputGain.connect(this.audioContext.destination);
     }
+
+    if (!this.recordingDestination) {
+      this.recordingDestination = this.audioContext.createMediaStreamDestination();
+    }
   }
 
   disconnectAnalyserSource() {
@@ -90,7 +95,14 @@ export default class AudioManager {
     if (!this.cueSource) {
       this.cueSource = this.audioContext.createMediaElementSource(this.cueAudio);
       this.cueSource.connect(this.outputGain);
+      if (this.recordingDestination) {
+        this.cueSource.connect(this.recordingDestination);
+      }
     }
+  }
+
+  getRecordingStream() {
+    return this.recordingDestination?.stream ?? null;
   }
 
   setOutputMuted(muted) {
