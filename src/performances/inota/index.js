@@ -10,6 +10,12 @@ function resolvePublicAsset(src) {
   return `${baseUrl}${src.replace(/^\//, "")}`;
 }
 
+function numberOrNull(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
 installInotaCeilingTextStyle();
 
 function normalizeClips(scene) {
@@ -28,12 +34,16 @@ function normalizeClips(scene) {
 
       if (!clip?.src) return null;
 
+      const start = numberOrNull(clip.start);
+      const inPoint = numberOrNull(clip.in);
+      const outPoint = numberOrNull(clip.out);
+
       return {
         ...clip,
         src: resolvePublicAsset(clip.src),
-        start: Number.isFinite(Number(clip.start)) ? Number(clip.start) : null,
-        in: Math.max(0, Number(clip.in ?? 0)),
-        out: Number.isFinite(Number(clip.out)) ? Number(clip.out) : null,
+        start,
+        in: Math.max(0, inPoint ?? 0),
+        out: outPoint,
         loop: Boolean(clip.loop ?? false)
       };
     })
@@ -55,12 +65,16 @@ function resolveCueClips(scene, subtitleCues) {
         String(cue?.text ?? "").toLowerCase().includes(needle)
       );
 
+      const inPoint = numberOrNull(item.in);
+      const outPoint = numberOrNull(item.out);
+      const explicitTime = numberOrNull(item.time);
+
       return {
         ...item,
         src: resolvePublicAsset(item.src),
-        time: Number(matchingCue?.time ?? item.time ?? 0),
-        in: Math.max(0, Number(item.in ?? 0)),
-        out: Number.isFinite(Number(item.out)) ? Number(item.out) : null
+        time: Number(matchingCue?.time ?? explicitTime ?? 0),
+        in: Math.max(0, inPoint ?? 0),
+        out: outPoint
       };
     });
 }
