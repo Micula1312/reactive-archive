@@ -1,7 +1,5 @@
 import elisaDialogues from "../elisa/dialogues.js";
 
-// Re-time the original ELISA Hydra texts to the six INOTA scenes.
-// Text is unchanged; only cue timing is compressed to fit the 8-minute score.
 function fit(cues = [], durationSeconds = 60, padding = 4) {
   if (!cues.length) return [];
   const sourceEnd = Math.max(...cues.map((cue) => Number(cue.end ?? cue.time ?? 0)), 1);
@@ -17,11 +15,32 @@ function fit(cues = [], durationSeconds = 60, padding = 4) {
   }));
 }
 
+function mergeGroups(groups = [], durationSeconds = 60, padding = 4) {
+  const source = groups.flat().map((cue) => ({ ...cue }));
+  if (!source.length) return [];
+
+  const normalized = [];
+  let cursor = 0;
+  for (const group of groups) {
+    const groupEnd = Math.max(...group.map((cue) => Number(cue.end ?? cue.time ?? 0)), 1);
+    for (const cue of group) {
+      normalized.push({
+        ...cue,
+        time: cursor + Number(cue.time ?? 0),
+        end: cursor + Number(cue.end ?? cue.time ?? 0)
+      });
+    }
+    cursor += groupEnd + 2;
+  }
+
+  return fit(normalized, durationSeconds, padding);
+}
+
+// Five-scene INOTA adaptation. Original ELISA text is preserved; only timing is compressed.
 export default {
-  threshold: fit(elisaDialogues.intro, 70, 5),
-  body: fit(elisaDialogues.genesis, 70, 4),
-  spill: fit(elisaDialogues.hypnosis, 75, 4),
-  rupture: fit(elisaDialogues.resonance, 85, 4),
-  expansion: fit(elisaDialogues.crossing, 95, 4),
-  afterimage: fit(elisaDialogues.farewell, 85, 4)
+  scene01: mergeGroups([elisaDialogues.intro, elisaDialogues.genesis], 85, 5),
+  scene02: fit(elisaDialogues.hypnosis, 90, 5),
+  scene03: fit(elisaDialogues.resonance, 85, 5),
+  scene04: fit(elisaDialogues.crossing, 105, 5),
+  scene05: fit(elisaDialogues.farewell, 115, 5)
 };
