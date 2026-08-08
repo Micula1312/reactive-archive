@@ -106,6 +106,7 @@ export default class SceneManager {
     this.restoreVideoLayer();
     this.paused = false;
     this.video.playbackRate = scene.playbackRate ?? 1;
+    this.renderer.setSurfaceMode?.(scene.surfaceMode ?? "both");
     this.renderer.setReactivity(scene.reactivity ?? 1);
     this.renderer.setEffect(scene.filter ?? {});
 
@@ -195,6 +196,7 @@ export default class SceneManager {
     const scene = this.scenes[nextIndex];
     await this.exitCurrentScene();
     this.currentIndex = nextIndex;
+    this.renderer.setSurfaceMode?.(scene.surfaceMode ?? "both");
 
     if (scene.type === "video") {
       await this.enterVideoScene(scene);
