@@ -19,6 +19,8 @@
     "useAsClock": true,
     "reactiveSource": "track"
   },
+  "subtitleTyping": true,
+  "subtitleTypingSpeed": 38,
   "scenes": [
     {
       "id": "scene-01",
@@ -43,11 +45,13 @@
       "ceilingColor": "#ff0000",
       "ceilingTextColor": "#ffffff",
       "clips": ["/inota/videos/06-Foto.mp4", "/inota/videos/06-Foto-2.mp4"],
-      "cueClip": {
-        "text": "This is hypnosis.",
-        "src": "/inota/videos/04-Video-Verticale.mp4",
-        "loop": true
-      },
+      "cueClips": [
+        {
+          "text": "This is hypnosis.",
+          "src": "/inota/videos/04-Video-Verticale.mp4",
+          "loop": true
+        }
+      ],
       "loopSequence": true,
       "filter": { "preset": "defocus", "intensity": 0.35 }
     },
@@ -74,6 +78,13 @@
       "ceilingColor": "#000000",
       "ceilingTextColor": "#ffffff",
       "clips": ["/inota/videos/15-Volto-Copri.mp4", "/inota/videos/16-Cacofonia.mp4"],
+      "cueClips": [
+        {
+          "text": "but connects.",
+          "src": "/inota/videos/08-Rotazione.mp4",
+          "loop": true
+        }
+      ],
       "loopSequence": true,
       "filter": { "preset": "defocus", "intensity": 0.62 }
     },
