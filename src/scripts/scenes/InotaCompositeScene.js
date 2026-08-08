@@ -11,6 +11,7 @@ export default class InotaCompositeScene {
     this.triggeredCueClips = new Set();
     this.cueModeActive = false;
     this.activeTimelineClipIndex = -1;
+    this.playRequestId = 0;
     this.handleEnded = this.handleEnded.bind(this);
   }
 
@@ -31,28 +32,59 @@ export default class InotaCompositeScene {
       : [];
   }
 
+  waitForMetadata(requestId) {
+    if (this.video.readyState >= 1) return Promise.resolve();
+
+    return new Promise((resolve) => {
+      const done = () => {
+        this.video.removeEventListener("loadedmetadata", done);
+        this.video.removeEventListener("error", done);
+        resolve();
+      };
+
+      this.video.addEventListener("loadedmetadata", done, { once: true });
+      this.video.addEventListener("error", done, { once: true });
+
+      // If another source replaces this request, do not leave a hanging promise.
+      window.setTimeout(() => {
+        if (requestId !== this.playRequestId) done();
+      }, 0);
+    });
+  }
+
   async playSource(src, { loop = false, inPoint = 0 } = {}) {
     if (!src) return;
 
+    const requestId = ++this.playRequestId;
+
+    // A source change intentionally interrupts any previous play() promise.
     this.video.pause();
     this.video.src = src;
     this.video.loop = loop;
-    this.video.load();
     this.video.style.visibility = "hidden";
+    this.video.load();
 
-    const seek = () => {
-      const target = Math.max(0, Number(inPoint ?? 0));
-      try {
-        this.video.currentTime = Math.min(target, Number.isFinite(this.video.duration) ? this.video.duration : target);
-      } catch {}
-    };
+    await this.waitForMetadata(requestId);
+    if (requestId !== this.playRequestId) return;
 
-    if (this.video.readyState >= 1) seek();
-    else this.video.addEventListener("loadedmetadata", seek, { once: true });
+    const target = Math.max(0, Number(inPoint ?? 0));
+    try {
+      const duration = Number(this.video.duration);
+      this.video.currentTime = Number.isFinite(duration)
+        ? Math.min(target, Math.max(0, duration - 0.001))
+        : target;
+    } catch {}
 
-    await this.video.play().catch((error) => {
-      console.warn("INOTA: impossibile avviare la clip video.", error);
-    });
+    if (requestId !== this.playRequestId) return;
+
+    try {
+      await this.video.play();
+    } catch (error) {
+      // AbortError is expected when a timeline/cue switches source while play() is pending.
+      if (error?.name !== "AbortError") {
+        console.warn("INOTA: impossibile avviare la clip video.", error);
+      }
+    }
   }
 
   async playTimelineClip(clip, index) {
@@ -213,6 +245,7 @@ export default class InotaCompositeScene {
   }
 
   async exit() {
+    ++this.playRequestId;
     this.video.pause();
     this.video.removeEventListener("ended", this.handleEnded);
     this.sequence = [];
