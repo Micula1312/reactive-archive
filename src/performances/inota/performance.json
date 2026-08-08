@@ -20,7 +20,7 @@
     "reactiveSource": "track"
   },
   "subtitleTyping": true,
-  "subtitleTypingSpeed": 24,
+  "subtitleTypingSpeed": 70,
   "scenes": [
     {
       "id": "scene-01",
@@ -64,7 +64,7 @@
     {
       "id": "scene-03",
       "order": 3,
-      "start": "02:55",
+      "start": "03:05",
       "title": "SCENE 03 — WHITE / 3D TOUCH",
       "type": "inota-composite",
       "dialogue": "scene03",
