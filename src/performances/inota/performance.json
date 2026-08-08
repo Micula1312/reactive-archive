@@ -10,75 +10,22 @@
     "fps": 30,
     "durationSeconds": 480,
     "ceiling": { "x": 0, "y": 0, "width": 3600, "height": 1200 },
-    "screen": { "x": 840, "y": 1200, "width": 1920, "height": 1200 }
+    "screenFrame": { "x": 840, "y": 1200, "width": 1920, "height": 1200 },
+    "screen": { "x": 840, "y": 1260, "width": 1920, "height": 1080 }
   },
   "timeline": {
-    "audio": "/inota/audio/master.wav",
+    "audio": "/inota/audio/master.mp3",
     "autoplay": true,
     "loop": false,
     "useAsClock": true,
     "reactiveSource": "track"
   },
   "scenes": [
-    {
-      "id": "threshold",
-      "order": 1,
-      "start": "00:00",
-      "title": "THRESHOLD — RED CEILING",
-      "type": "hydra",
-      "module": "threshold",
-      "surfaceMode": "screen",
-      "ceilingColor": "#ff2b2b"
-    },
-    {
-      "id": "body",
-      "order": 2,
-      "start": "01:10",
-      "title": "BODY — BLUE CEILING",
-      "type": "hydra",
-      "module": "body",
-      "surfaceMode": "screen",
-      "ceilingColor": "#2457ff"
-    },
-    {
-      "id": "spill",
-      "order": 3,
-      "start": "02:20",
-      "title": "SPILL — ACID CEILING",
-      "type": "hydra",
-      "module": "spill",
-      "surfaceMode": "screen",
-      "ceilingColor": "#b8ff00"
-    },
-    {
-      "id": "rupture",
-      "order": 4,
-      "start": "03:35",
-      "title": "RUPTURE — MAGENTA CEILING",
-      "type": "hydra",
-      "module": "rupture",
-      "surfaceMode": "screen",
-      "ceilingColor": "#ff00a8"
-    },
-    {
-      "id": "expansion",
-      "order": 5,
-      "start": "05:00",
-      "title": "EXPANSION — CYAN CEILING",
-      "type": "hydra",
-      "module": "expansion",
-      "surfaceMode": "screen",
-      "ceilingColor": "#00e5ff"
-    },
-    {
-      "id": "afterimage",
-      "order": 6,
-      "start": "06:35",
-      "title": "AFTERIMAGE — AMBER CEILING",
-      "type": "hydra",
-      "module": "afterimage",
-      "surfaceMode": "screen",
-      "ceilingColor": "#ff9d00"
-    }
+    { "id": "threshold", "order": 1, "start": "00:00", "title": "THRESHOLD — RED CEILING", "type": "hydra", "module": "threshold", "surfaceMode": "screen", "ceilingColor": "#ff2b2b" },
+    { "id": "body", "order": 2, "start": "01:10", "title": "BODY — BLUE CEILING", "type": "hydra", "module": "body", "surfaceMode": "screen", "ceilingColor": "#2457ff" },
+    { "id": "spill", "order": 3, "start": "02:20", "title": "SPILL — ACID CEILING", "type": "hydra", "module": "spill", "surfaceMode": "screen", "ceilingColor": "#b8ff00" },
+    { "id": "rupture", "order": 4, "start": "03:35", "title": "RUPTURE — MAGENTA CEILING", "type": "hydra", "module": "rupture", "surfaceMode": "screen", "ceilingColor": "#ff00a8" },
+    { "id": "expansion", "order": 5, "start": "05:00", "title": "EXPANSION — CYAN CEILING", "type": "hydra", "module": "expansion", "surfaceMode": "screen", "ceilingColor": "#00e5ff" },
+    { "id": "afterimage", "order": 6, "start": "06:35", "title": "AFTERIMAGE — AMBER CEILING", "type": "hydra", "module": "afterimage", "surfaceMode": "screen", "ceilingColor": "#ff9d00" }
   ]
 }
