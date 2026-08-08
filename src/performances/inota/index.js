@@ -25,14 +25,26 @@ export default {
     const clips = Array.isArray(scene.clips)
       ? scene.clips.map(resolvePublicAsset)
       : [];
+    const subtitleCues = dialogues[scene.dialogue ?? scene.id] ?? [];
+
+    let cueClip;
+    if (scene.cueClip?.src) {
+      const matchingCue = subtitleCues.find((cue) => cue.text === scene.cueClip.text);
+      cueClip = {
+        ...scene.cueClip,
+        src: resolvePublicAsset(scene.cueClip.src),
+        time: Number(matchingCue?.time ?? scene.cueClip.time ?? 0)
+      };
+    }
 
     return {
       ...scene,
       output: data.output,
       src: clips[0] ?? resolvePublicAsset(scene.src),
       sequence: clips.slice(1),
-      subtitleCues: dialogues[scene.dialogue ?? scene.id],
+      subtitleCues,
       subtitleLayout: "ceiling",
+      cueClip,
       patch: scene.module ? hydraModules[scene.module] : undefined
     };
   })
