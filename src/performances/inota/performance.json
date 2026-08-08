@@ -55,7 +55,7 @@
       "dialogue": "scene03",
       "ceilingColor": "#ffffff",
       "ceilingTextColor": "#000000",
-      "clips": ["/inota/videos/07-3d-touch.mp4"],
+      "clips": ["/inota/videos/07-3D-Touch.mp4"],
       "loopSequence": true,
       "filter": { "preset": "glitch", "intensity": 0.72 }
     },
