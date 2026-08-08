@@ -10,6 +10,7 @@ export default class SubtitleManager {
     this.enabled = true;
     this.sceneStartedAt = 0;
     this.pendingShowTimer = null;
+    this.typingTimer = null;
     this.lastToggleAt = 0;
 
     this.injectStyles();
@@ -81,6 +82,18 @@ export default class SubtitleManager {
         display: block;
       }
 
+      #performance-subtitles.is-typing .subtitle-text::after {
+        content: "_";
+        display: inline-block;
+        margin-left: 0.08em;
+        animation: subtitle-cursor-blink 700ms steps(1, end) infinite;
+      }
+
+      @keyframes subtitle-cursor-blink {
+        0%, 45% { opacity: 1; }
+        46%, 100% { opacity: 0; }
+      }
+
       @media (max-width: 900px) {
         #performance-subtitles {
           top: max(24px, env(safe-area-inset-top));
@@ -124,6 +137,7 @@ export default class SubtitleManager {
 
   setScene(scene) {
     this.cancelPendingShow();
+    this.cancelTyping();
     this.scene = scene ?? null;
     this.cues = this.normalizeCues(scene);
     this.currentCueIndex = -1;
@@ -155,6 +169,7 @@ export default class SubtitleManager {
     this.enabled = Boolean(enabled);
     if (!this.enabled) {
       this.cancelPendingShow();
+      this.cancelTyping();
       this.clear();
     }
   }
@@ -182,6 +197,7 @@ export default class SubtitleManager {
 
     this.currentCueIndex = cueIndex;
     this.cancelPendingShow();
+    this.cancelTyping();
 
     if (cueIndex < 0) {
       this.clear();
@@ -224,15 +240,37 @@ export default class SubtitleManager {
     const speakerElement = this.element.querySelector(".subtitle-speaker");
     const textElement = this.element.querySelector(".subtitle-text");
 
-    this.element.classList.remove("is-visible");
+    this.element.classList.remove("is-visible", "is-typing");
 
     this.pendingShowTimer = window.setTimeout(() => {
       this.pendingShowTimer = null;
       if (!this.enabled) return;
+
       this.element.dataset.speaker = cue.speaker ?? "aicha";
       speakerElement.textContent = cue.label ?? this.formatSpeaker(cue.speaker);
-      textElement.textContent = cue.text ?? "";
       this.element.classList.add("is-visible");
+
+      const fullText = cue.text ?? "";
+      if (!this.scene?.subtitleTyping) {
+        textElement.textContent = fullText;
+        return;
+      }
+
+      textElement.textContent = "";
+      this.element.classList.add("is-typing");
+
+      const speed = Math.max(8, Number(this.scene?.subtitleTypingSpeed ?? 38));
+      let index = 0;
+
+      this.typingTimer = window.setInterval(() => {
+        index += 1;
+        textElement.textContent = fullText.slice(0, index);
+
+        if (index >= fullText.length) {
+          this.cancelTyping();
+          this.element.classList.remove("is-typing");
+        }
+      }, speed);
     }, 150);
   }
 
@@ -243,7 +281,16 @@ export default class SubtitleManager {
     }
   }
 
+  cancelTyping() {
+    if (this.typingTimer) {
+      window.clearInterval(this.typingTimer);
+      this.typingTimer = null;
+    }
+    this.element?.classList.remove("is-typing");
+  }
+
   clear() {
+    this.cancelTyping();
     this.element?.classList.remove("is-visible");
   }
 
