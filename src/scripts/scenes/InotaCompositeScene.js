@@ -5,6 +5,8 @@ export default class InotaCompositeScene {
     this.renderer = renderer;
     this.layer = null;
     this.frame = null;
+    this.flashLayer = null;
+    this.flashLevel = 0;
     this.sequence = [];
     this.sequenceIndex = 0;
     this.sceneStartedAt = 0;
@@ -145,6 +147,7 @@ export default class InotaCompositeScene {
 
     this.sequenceIndex = 0;
     this.sceneStartedAt = performance.now();
+    this.flashLevel = 0;
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
     this.activeTimelineClipIndex = -1;
@@ -193,8 +196,26 @@ export default class InotaCompositeScene {
     layer.append(frame);
     document.body.append(layer);
 
+    const flashLayer = document.createElement("div");
+    flashLayer.dataset.sceneLayer = "inota-high-flash";
+    Object.assign(flashLayer.style, {
+      position: "fixed",
+      left: "50%",
+      top: "50%",
+      transform: "translate(-50%, -50%)",
+      width: "min(100vw, 150vh)",
+      height: "min(100vh, 66.666667vw)",
+      zIndex: "1000005",
+      background: this.scene.highFlashColor ?? "#ff0000",
+      opacity: "0",
+      pointerEvents: "none",
+      willChange: "opacity"
+    });
+    document.body.append(flashLayer);
+
     this.layer = layer;
     this.frame = frame;
+    this.flashLayer = flashLayer;
 
     document.body.style.setProperty(
       "--inota-ceiling-text",
@@ -204,7 +225,7 @@ export default class InotaCompositeScene {
 
   setParameter() {}
 
-  update() {
+  update(audioData = {}) {
     const elapsed = (performance.now() - this.sceneStartedAt) / 1000;
 
     const timelineClips = this.getTimelineClips();
@@ -246,6 +267,24 @@ export default class InotaCompositeScene {
     ) {
       this.video.pause();
     }
+
+    // High-frequency peaks create a short red flash over the whole 3600x2400 master.
+    const threshold = Number(this.scene.highFlashThreshold ?? 0.62);
+    const maxOpacity = Number(this.scene.highFlashMaxOpacity ?? 0.78);
+    const decay = Number(this.scene.highFlashDecay ?? 0.82);
+    const high = Math.max(0, Math.min(1, Number(audioData.high) || 0));
+
+    if (high > threshold) {
+      const normalized = Math.min(1, (high - threshold) / Math.max(0.001, 1 - threshold));
+      this.flashLevel = Math.max(this.flashLevel, normalized * maxOpacity);
+    } else {
+      this.flashLevel *= decay;
+      if (this.flashLevel < 0.008) this.flashLevel = 0;
+    }
+
+    if (this.flashLayer) {
+      this.flashLayer.style.opacity = String(this.flashLevel);
+    }
   }
 
   async exit() {
@@ -254,18 +293,22 @@ export default class InotaCompositeScene {
     this.video.removeEventListener("ended", this.handleEnded);
     this.sequence = [];
     this.sequenceIndex = 0;
+    this.flashLevel = 0;
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
     this.activeTimelineClipIndex = -1;
     this.layer?.remove();
+    this.flashLayer?.remove();
     this.layer = null;
     this.frame = null;
+    this.flashLayer = null;
     document.body.style.removeProperty("--inota-ceiling-text");
   }
 
   restart() {
     this.sequenceIndex = 0;
     this.sceneStartedAt = performance.now();
+    this.flashLevel = 0;
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
     this.activeTimelineClipIndex = -1;
