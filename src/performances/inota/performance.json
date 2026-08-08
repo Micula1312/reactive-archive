@@ -43,6 +43,11 @@
       "ceilingColor": "#ff0000",
       "ceilingTextColor": "#ffffff",
       "clips": ["/inota/videos/06-Foto.mp4", "/inota/videos/06-Foto-2.mp4"],
+      "cueClip": {
+        "text": "This is hypnosis.",
+        "src": "/inota/videos/04-Video-Verticale.mp4",
+        "loop": true
+      },
       "loopSequence": true,
       "filter": { "preset": "defocus", "intensity": 0.35 }
     },
