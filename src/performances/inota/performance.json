@@ -31,8 +31,10 @@
       "dialogue": "scene01",
       "ceilingColor": "#000000",
       "ceilingTextColor": "#ffffff",
-      "clips": ["/inota/videos/Video-01.mp4", "/inota/videos/03-Loader.mp4"],
-      "loopSequence": true,
+      "clips": [
+        { "src": "/inota/videos/Video-01.mp4", "start": 0, "in": 0, "out": null },
+        { "src": "/inota/videos/03-Loader.mp4", "start": 35, "in": 0, "out": null }
+      ],
       "filter": { "preset": "defocus", "intensity": 0.45 }
     },
     {
@@ -44,15 +46,19 @@
       "dialogue": "scene02",
       "ceilingColor": "#ff0000",
       "ceilingTextColor": "#ffffff",
-      "clips": ["/inota/videos/06-Foto.mp4", "/inota/videos/06-Foto-2.mp4"],
+      "clips": [
+        { "src": "/inota/videos/06-Foto.mp4", "start": 0, "in": 0, "out": null },
+        { "src": "/inota/videos/06-Foto-2.mp4", "start": 35, "in": 0, "out": null }
+      ],
       "cueClips": [
         {
           "text": "This is hypnosis.",
           "src": "/inota/videos/04-Video-Verticale.mp4",
+          "in": 0,
+          "out": null,
           "loop": true
         }
       ],
-      "loopSequence": true,
       "filter": { "preset": "defocus", "intensity": 0.35 }
     },
     {
@@ -64,8 +70,9 @@
       "dialogue": "scene03",
       "ceilingColor": "#ffffff",
       "ceilingTextColor": "#000000",
-      "clips": ["/inota/videos/07-3D-Touch.mp4"],
-      "loopSequence": true,
+      "clips": [
+        { "src": "/inota/videos/07-3D-Touch.mp4", "start": 0, "in": 0, "out": null, "loop": true }
+      ],
       "filter": { "preset": "glitch", "intensity": 0.72 }
     },
     {
@@ -77,15 +84,19 @@
       "dialogue": "scene04",
       "ceilingColor": "#000000",
       "ceilingTextColor": "#ffffff",
-      "clips": ["/inota/videos/15-Volto-Copri.mp4", "/inota/videos/16-Cacofonia.mp4"],
+      "clips": [
+        { "src": "/inota/videos/15-Volto-Copri.mp4", "start": 0, "in": 0, "out": null },
+        { "src": "/inota/videos/16-Cacofonia.mp4", "start": 40, "in": 0, "out": null }
+      ],
       "cueClips": [
         {
           "text": "but connects.",
           "src": "/inota/videos/08-Rotazione.mp4",
+          "in": 0,
+          "out": null,
           "loop": true
         }
       ],
-      "loopSequence": true,
       "filter": { "preset": "defocus", "intensity": 0.62 }
     },
     {
@@ -97,8 +108,10 @@
       "dialogue": "scene05",
       "ceilingColor": "#ff0000",
       "ceilingTextColor": "#ffffff",
-      "clips": ["/inota/videos/17-Ex-Albero.mp4", "/inota/videos/20-Blivet.mp4"],
-      "loopSequence": true,
+      "clips": [
+        { "src": "/inota/videos/17-Ex-Albero.mp4", "start": 0, "in": 0, "out": null },
+        { "src": "/inota/videos/20-Blivet.mp4", "start": 45, "in": 0, "out": null, "loop": true }
+      ],
       "filter": { "preset": "defocus", "intensity": 0.5 }
     }
   ]
