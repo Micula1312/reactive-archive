@@ -1,5 +1,3 @@
-import Hydra from "hydra-synth";
-
 export default class InotaCompositeScene {
   constructor({ scene, video, renderer }) {
     this.scene = scene;
@@ -7,11 +5,49 @@ export default class InotaCompositeScene {
     this.renderer = renderer;
     this.layer = null;
     this.frame = null;
-    this.canvas = null;
-    this.hydra = null;
-    this.audioData = { level: 0, bass: 0, mid: 0, high: 0 };
-    this.parameters = this.scene.parameters ?? {};
-    this.scene.parameters = this.parameters;
+    this.sequence = [];
+    this.sequenceIndex = 0;
+    this.handleEnded = this.handleEnded.bind(this);
+  }
+
+  buildSequence() {
+    const sequence = [];
+    if (this.scene.src) sequence.push(this.scene.src);
+    if (Array.isArray(this.scene.sequence)) {
+      for (const src of this.scene.sequence) {
+        if (src && !sequence.includes(src)) sequence.push(src);
+      }
+    }
+    return sequence;
+  }
+
+  async playCurrent() {
+    const src = this.sequence[this.sequenceIndex];
+    if (!src) return;
+
+    this.video.pause();
+    this.video.src = src;
+    this.video.loop = this.sequence.length === 1 && (this.scene.loopSequence ?? true);
+    this.video.currentTime = Math.max(0, Number(this.scene.videoIn ?? 0));
+    this.video.load();
+    this.video.style.visibility = "hidden";
+    await this.video.play().catch((error) => {
+      console.warn("INOTA: impossibile avviare la clip video.", error);
+    });
+  }
+
+  async handleEnded() {
+    if (this.sequence.length <= 1) return;
+
+    if (this.sequenceIndex < this.sequence.length - 1) {
+      this.sequenceIndex += 1;
+    } else if (this.scene.loopSequence ?? true) {
+      this.sequenceIndex = 0;
+    } else {
+      return;
+    }
+
+    await this.playCurrent();
   }
 
   async enter() {
@@ -20,25 +56,21 @@ export default class InotaCompositeScene {
       throw new Error("InotaCompositeScene: output INOTA mancante.");
     }
 
-    // SCREEN: reuse the existing Three.js video renderer, restricted to the 1920x1200 screen.
     this.renderer?.setSurfaceMode?.("screen");
     this.renderer?.setReactivity?.(this.scene.reactivity ?? 1);
     this.renderer?.setEffect?.(this.scene.filter ?? {});
     if (this.renderer?.canvas?.style) this.renderer.canvas.style.visibility = "visible";
 
-    if (!this.scene.src) throw new Error(`InotaCompositeScene: clip mancante per ${this.scene.id}.`);
+    this.sequence = this.buildSequence();
+    if (!this.sequence.length) {
+      throw new Error(`InotaCompositeScene: clip mancante per ${this.scene.id}.`);
+    }
 
-    this.video.pause();
-    this.video.src = this.scene.src;
-    this.video.loop = this.scene.loop ?? true;
-    this.video.currentTime = Math.max(0, Number(this.scene.videoIn ?? 0));
-    this.video.load();
-    this.video.style.visibility = "hidden";
-    await this.video.play().catch((error) => {
-      console.warn("INOTA: impossibile avviare la clip video.", error);
-    });
+    this.sequenceIndex = 0;
+    this.video.addEventListener("ended", this.handleEnded);
+    await this.playCurrent();
 
-    // CEILING: independent Hydra canvas, exactly 3600x1200 inside the 3600x2400 master preview.
+    // CEILING: solid colour field. Text is rendered independently by SubtitleManager.
     const layer = document.createElement("div");
     layer.dataset.sceneLayer = "inota-composite";
     Object.assign(layer.style, {
@@ -60,72 +92,46 @@ export default class InotaCompositeScene {
       background: "transparent"
     });
 
-    const canvas = document.createElement("canvas");
-    Object.assign(canvas.style, {
+    const ceiling = document.createElement("div");
+    ceiling.dataset.inotaCeiling = "solid";
+    Object.assign(ceiling.style, {
       position: "absolute",
       left: "0",
       top: "0",
       width: "100%",
       height: "50%",
-      display: "block",
-      background: "transparent"
+      background: this.scene.ceilingColor ?? "#000000"
     });
 
-    frame.append(canvas);
+    frame.append(ceiling);
     layer.append(frame);
     document.body.append(layer);
 
     this.layer = layer;
     this.frame = frame;
-    this.canvas = canvas;
 
-    this.hydra = new Hydra({
-      canvas,
-      width: output.ceiling.width,
-      height: output.ceiling.height,
-      detectAudio: false,
-      makeGlobal: true
-    });
-
-    if (typeof this.scene.patch !== "function") {
-      throw new Error(`InotaCompositeScene: patch Hydra mancante per ${this.scene.id}.`);
-    }
-
-    this.applyPatch();
+    document.body.style.setProperty(
+      "--inota-ceiling-text",
+      this.scene.ceilingTextColor ?? "#ffffff"
+    );
   }
 
-  applyPatch() {
-    this.scene.patch(this.audioData, this.parameters);
-  }
-
-  setParameter(key, value) {
-    this.parameters[key] = value;
-  }
-
-  update(audioData = {}) {
-    Object.assign(this.audioData, audioData);
-  }
+  setParameter() {}
+  update() {}
 
   async exit() {
     this.video.pause();
-
-    try {
-      if (typeof window.hush === "function") window.hush();
-    } catch (error) {
-      console.warn("INOTA: impossibile arrestare Hydra.", error);
-    }
-
-    this.hydra = null;
+    this.video.removeEventListener("ended", this.handleEnded);
+    this.sequence = [];
+    this.sequenceIndex = 0;
     this.layer?.remove();
     this.layer = null;
     this.frame = null;
-    this.canvas = null;
+    document.body.style.removeProperty("--inota-ceiling-text");
   }
 
   restart() {
-    this.video.currentTime = Math.max(0, Number(this.scene.videoIn ?? 0));
-    this.video.play().catch(() => {});
-    this.applyPatch();
-    return Promise.resolve();
+    this.sequenceIndex = 0;
+    return this.playCurrent();
   }
 }
