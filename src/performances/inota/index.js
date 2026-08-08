@@ -1,6 +1,7 @@
 import data from "./performance.json";
 import dialogues from "./dialogues.js";
 import hydraModules from "./hydra/index.js";
+import installInotaCeilingTextStyle from "./ceilingTextStyle.js";
 
 const baseUrl = import.meta.env.BASE_URL;
 
@@ -8,6 +9,8 @@ function resolvePublicAsset(src) {
   if (!src || /^(https?:|data:|blob:)/.test(src)) return src;
   return `${baseUrl}${src.replace(/^\//, "")}`;
 }
+
+installInotaCeilingTextStyle();
 
 export default {
   ...data,
