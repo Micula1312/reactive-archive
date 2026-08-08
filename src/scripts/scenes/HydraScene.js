@@ -39,7 +39,7 @@ export default class HydraScene {
       zIndex: "2"
     });
 
-    const addBlack = ({ x, y, width, height }) => {
+    const addBlock = ({ x, y, width, height }, color = "#000") => {
       const block = document.createElement("div");
       Object.assign(block.style, {
         position: "absolute",
@@ -47,7 +47,7 @@ export default class HydraScene {
         top: `${(y / output.height) * 100}%`,
         width: `${(width / output.width) * 100}%`,
         height: `${(height / output.height) * 100}%`,
-        background: "#000"
+        background: color
       });
       mask.append(block);
     };
@@ -56,18 +56,24 @@ export default class HydraScene {
     const screen = output.screen;
 
     // Permanent black areas beside the 1920x1200 front screen.
-    addBlack({ x: 0, y: screen.y, width: screen.x, height: screen.height });
-    addBlack({
+    addBlock({ x: 0, y: screen.y, width: screen.x, height: screen.height });
+    addBlock({
       x: screen.x + screen.width,
       y: screen.y,
       width: output.width - (screen.x + screen.width),
       height: screen.height
     });
 
+    // INOTA test / composition helper:
+    // a scene can keep its generated content on SCREEN while assigning
+    // a completely independent solid colour to the CEILING.
     if (surfaceMode === "screen") {
-      addBlack(ceiling);
+      addBlock(ceiling, this.scene.ceilingColor ?? "#000");
     } else if (surfaceMode === "ceiling") {
-      addBlack(screen);
+      addBlock(screen);
+    } else if (this.scene.ceilingColor) {
+      // Even in "both" mode, an explicit ceilingColor wins over Hydra on the ceiling.
+      addBlock(ceiling, this.scene.ceilingColor);
     }
 
     frame.append(mask);
