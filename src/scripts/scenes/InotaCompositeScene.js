@@ -10,6 +10,7 @@ export default class InotaCompositeScene {
     this.sceneStartedAt = 0;
     this.triggeredCueClips = new Set();
     this.cueModeActive = false;
+    this.activeTimelineClipIndex = -1;
     this.handleEnded = this.handleEnded.bind(this);
   }
 
@@ -24,17 +25,42 @@ export default class InotaCompositeScene {
     return sequence;
   }
 
-  async playSource(src, { loop = false } = {}) {
+  getTimelineClips() {
+    return Array.isArray(this.scene.clips)
+      ? this.scene.clips.filter((clip) => clip?.src && Number.isFinite(Number(clip.start)))
+      : [];
+  }
+
+  async playSource(src, { loop = false, inPoint = 0 } = {}) {
     if (!src) return;
 
     this.video.pause();
     this.video.src = src;
     this.video.loop = loop;
-    this.video.currentTime = 0;
     this.video.load();
     this.video.style.visibility = "hidden";
+
+    const seek = () => {
+      const target = Math.max(0, Number(inPoint ?? 0));
+      try {
+        this.video.currentTime = Math.min(target, Number.isFinite(this.video.duration) ? this.video.duration : target);
+      } catch {}
+    };
+
+    if (this.video.readyState >= 1) seek();
+    else this.video.addEventListener("loadedmetadata", seek, { once: true });
+
     await this.video.play().catch((error) => {
       console.warn("INOTA: impossibile avviare la clip video.", error);
+    });
+  }
+
+  async playTimelineClip(clip, index) {
+    this.activeTimelineClipIndex = index;
+    this.cueModeActive = false;
+    await this.playSource(clip.src, {
+      loop: clip.loop ?? false,
+      inPoint: clip.in ?? 0
     });
   }
 
@@ -43,12 +69,14 @@ export default class InotaCompositeScene {
     if (!src) return;
 
     await this.playSource(src, {
-      loop: this.sequence.length === 1 && (this.scene.loopSequence ?? true)
+      loop: this.sequence.length === 1 && (this.scene.loopSequence ?? true),
+      inPoint: 0
     });
   }
 
   async handleEnded() {
     if (this.cueModeActive) return;
+    if (this.getTimelineClips().length) return;
     if (this.sequence.length <= 1) return;
 
     if (this.sequenceIndex < this.sequence.length - 1) {
@@ -74,7 +102,8 @@ export default class InotaCompositeScene {
     if (this.renderer?.canvas?.style) this.renderer.canvas.style.visibility = "visible";
 
     this.sequence = this.buildSequence();
-    if (!this.sequence.length) {
+    const timelineClips = this.getTimelineClips();
+    if (!this.sequence.length && !timelineClips.length) {
       throw new Error(`InotaCompositeScene: clip mancante per ${this.scene.id}.`);
     }
 
@@ -82,8 +111,15 @@ export default class InotaCompositeScene {
     this.sceneStartedAt = performance.now();
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
+    this.activeTimelineClipIndex = -1;
     this.video.addEventListener("ended", this.handleEnded);
-    await this.playCurrent();
+
+    if (timelineClips.length) {
+      const first = timelineClips.findIndex((clip) => Number(clip.start) <= 0);
+      if (first >= 0) await this.playTimelineClip(timelineClips[first], first);
+    } else {
+      await this.playCurrent();
+    }
 
     const layer = document.createElement("div");
     layer.dataset.sceneLayer = "inota-composite";
@@ -133,19 +169,47 @@ export default class InotaCompositeScene {
   setParameter() {}
 
   update() {
-    const cueClips = Array.isArray(this.scene.cueClips) ? this.scene.cueClips : [];
-    if (!cueClips.length) return;
-
     const elapsed = (performance.now() - this.sceneStartedAt) / 1000;
 
+    const timelineClips = this.getTimelineClips();
+    if (timelineClips.length && !this.cueModeActive) {
+      let wantedIndex = -1;
+      for (let i = 0; i < timelineClips.length; i += 1) {
+        if (elapsed >= Number(timelineClips[i].start ?? 0)) wantedIndex = i;
+      }
+
+      if (wantedIndex >= 0 && wantedIndex !== this.activeTimelineClipIndex) {
+        this.playTimelineClip(timelineClips[wantedIndex], wantedIndex);
+      }
+
+      const active = timelineClips[this.activeTimelineClipIndex];
+      if (active && Number.isFinite(Number(active.out)) && this.video.currentTime >= Number(active.out)) {
+        this.video.pause();
+      }
+    }
+
+    const cueClips = Array.isArray(this.scene.cueClips) ? this.scene.cueClips : [];
     cueClips.forEach((cueClip, index) => {
       if (!cueClip?.src || this.triggeredCueClips.has(index)) return;
       if (elapsed < Number(cueClip.time ?? 0)) return;
 
       this.triggeredCueClips.add(index);
       this.cueModeActive = true;
-      this.playSource(cueClip.src, { loop: cueClip.loop ?? true });
+      this.playSource(cueClip.src, {
+        loop: cueClip.loop ?? true,
+        inPoint: cueClip.in ?? 0
+      });
     });
+
+    const activeCueIndex = Math.max(...Array.from(this.triggeredCueClips), -1);
+    const activeCue = activeCueIndex >= 0 ? cueClips[activeCueIndex] : null;
+    if (
+      activeCue &&
+      Number.isFinite(Number(activeCue.out)) &&
+      this.video.currentTime >= Number(activeCue.out)
+    ) {
+      this.video.pause();
+    }
   }
 
   async exit() {
@@ -155,6 +219,7 @@ export default class InotaCompositeScene {
     this.sequenceIndex = 0;
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
+    this.activeTimelineClipIndex = -1;
     this.layer?.remove();
     this.layer = null;
     this.frame = null;
@@ -166,6 +231,14 @@ export default class InotaCompositeScene {
     this.sceneStartedAt = performance.now();
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
+    this.activeTimelineClipIndex = -1;
+
+    const timelineClips = this.getTimelineClips();
+    if (timelineClips.length) {
+      const first = timelineClips.findIndex((clip) => Number(clip.start) <= 0);
+      return first >= 0 ? this.playTimelineClip(timelineClips[first], first) : Promise.resolve();
+    }
+
     return this.playCurrent();
   }
 }
