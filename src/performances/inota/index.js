@@ -12,6 +12,34 @@ function resolvePublicAsset(src) {
 
 installInotaCeilingTextStyle();
 
+function normalizeClips(scene) {
+  if (!Array.isArray(scene.clips)) return [];
+
+  return scene.clips
+    .map((clip, index) => {
+      if (typeof clip === "string") {
+        return {
+          src: resolvePublicAsset(clip),
+          start: index === 0 ? 0 : null,
+          in: 0,
+          out: null
+        };
+      }
+
+      if (!clip?.src) return null;
+
+      return {
+        ...clip,
+        src: resolvePublicAsset(clip.src),
+        start: Number.isFinite(Number(clip.start)) ? Number(clip.start) : null,
+        in: Math.max(0, Number(clip.in ?? 0)),
+        out: Number.isFinite(Number(clip.out)) ? Number(clip.out) : null,
+        loop: Boolean(clip.loop ?? false)
+      };
+    })
+    .filter(Boolean);
+}
+
 function resolveCueClips(scene, subtitleCues) {
   const raw = Array.isArray(scene.cueClips)
     ? scene.cueClips
@@ -30,7 +58,9 @@ function resolveCueClips(scene, subtitleCues) {
       return {
         ...item,
         src: resolvePublicAsset(item.src),
-        time: Number(matchingCue?.time ?? item.time ?? 0)
+        time: Number(matchingCue?.time ?? item.time ?? 0),
+        in: Math.max(0, Number(item.in ?? 0)),
+        out: Number.isFinite(Number(item.out)) ? Number(item.out) : null
       };
     });
 }
@@ -45,16 +75,15 @@ export default {
     audio: resolvePublicAsset(data.timeline.audio)
   },
   scenes: data.scenes.map((scene) => {
-    const clips = Array.isArray(scene.clips)
-      ? scene.clips.map(resolvePublicAsset)
-      : [];
+    const clips = normalizeClips(scene);
     const subtitleCues = dialogues[scene.dialogue ?? scene.id] ?? [];
 
     return {
       ...scene,
       output: data.output,
-      src: clips[0] ?? resolvePublicAsset(scene.src),
-      sequence: clips.slice(1),
+      clips,
+      src: clips[0]?.src ?? resolvePublicAsset(scene.src),
+      sequence: clips.slice(1).map((clip) => clip.src),
       subtitleCues,
       subtitleLayout: "ceiling",
       subtitleTyping: scene.subtitleTyping ?? data.subtitleTyping ?? false,
