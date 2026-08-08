@@ -15,6 +15,10 @@ export default class InotaCompositeScene {
     this.handleEnded = this.handleEnded.bind(this);
   }
 
+  hasNumber(value) {
+    return value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
+  }
+
   buildSequence() {
     const sequence = [];
     if (this.scene.src) sequence.push(this.scene.src);
@@ -28,7 +32,7 @@ export default class InotaCompositeScene {
 
   getTimelineClips() {
     return Array.isArray(this.scene.clips)
-      ? this.scene.clips.filter((clip) => clip?.src && Number.isFinite(Number(clip.start)))
+      ? this.scene.clips.filter((clip) => clip?.src && this.hasNumber(clip.start))
       : [];
   }
 
@@ -36,7 +40,10 @@ export default class InotaCompositeScene {
     if (this.video.readyState >= 1) return Promise.resolve();
 
     return new Promise((resolve) => {
+      let finished = false;
       const done = () => {
+        if (finished) return;
+        finished = true;
         this.video.removeEventListener("loadedmetadata", done);
         this.video.removeEventListener("error", done);
         resolve();
@@ -45,7 +52,6 @@ export default class InotaCompositeScene {
       this.video.addEventListener("loadedmetadata", done, { once: true });
       this.video.addEventListener("error", done, { once: true });
 
-      // If another source replaces this request, do not leave a hanging promise.
       window.setTimeout(() => {
         if (requestId !== this.playRequestId) done();
       }, 0);
@@ -57,7 +63,6 @@ export default class InotaCompositeScene {
 
     const requestId = ++this.playRequestId;
 
-    // A source change intentionally interrupts any previous play() promise.
     this.video.pause();
     this.video.src = src;
     this.video.loop = loop;
@@ -80,7 +85,6 @@ export default class InotaCompositeScene {
     try {
       await this.video.play();
     } catch (error) {
-      // AbortError is expected when a timeline/cue switches source while play() is pending.
       if (error?.name !== "AbortError") {
         console.warn("INOTA: impossibile avviare la clip video.", error);
       }
@@ -207,7 +211,7 @@ export default class InotaCompositeScene {
     if (timelineClips.length && !this.cueModeActive) {
       let wantedIndex = -1;
       for (let i = 0; i < timelineClips.length; i += 1) {
-        if (elapsed >= Number(timelineClips[i].start ?? 0)) wantedIndex = i;
+        if (elapsed >= Number(timelineClips[i].start)) wantedIndex = i;
       }
 
       if (wantedIndex >= 0 && wantedIndex !== this.activeTimelineClipIndex) {
@@ -215,7 +219,7 @@ export default class InotaCompositeScene {
       }
 
       const active = timelineClips[this.activeTimelineClipIndex];
-      if (active && Number.isFinite(Number(active.out)) && this.video.currentTime >= Number(active.out)) {
+      if (active && this.hasNumber(active.out) && this.video.currentTime >= Number(active.out)) {
         this.video.pause();
       }
     }
@@ -237,7 +241,7 @@ export default class InotaCompositeScene {
     const activeCue = activeCueIndex >= 0 ? cueClips[activeCueIndex] : null;
     if (
       activeCue &&
-      Number.isFinite(Number(activeCue.out)) &&
+      this.hasNumber(activeCue.out) &&
       this.video.currentTime >= Number(activeCue.out)
     ) {
       this.video.pause();
