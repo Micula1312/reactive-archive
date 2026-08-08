@@ -14,6 +14,14 @@ function formatTime(value) {
   return `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
+function formatPreciseTime(value) {
+  const total = Math.max(0, Number(value) || 0);
+  const minutes = Math.floor(total / 60);
+  const seconds = Math.floor(total % 60);
+  const milliseconds = Math.floor((total - Math.floor(total)) * 1000);
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
+}
+
 export default class RegiaTimeline {
   constructor({ audio, performance, sceneManager, onSeek }) {
     this.audio = audio;
@@ -29,6 +37,7 @@ export default class RegiaTimeline {
     this.progress = this.element.querySelector(".regia-timeline__progress");
     this.playhead = this.element.querySelector(".regia-timeline__playhead");
     this.currentTimeLabel = this.element.querySelector(".regia-timeline__current");
+    this.preciseTimeLabel = this.element.querySelector(".regia-timeline__clock-value");
     this.durationLabel = this.element.querySelector(".regia-timeline__duration");
     this.sceneLabel = this.element.querySelector(".regia-timeline__scene");
     this.track = this.element.querySelector(".regia-timeline__track");
@@ -51,7 +60,7 @@ export default class RegiaTimeline {
         bottom: 18px;
         z-index: 1000003;
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: auto minmax(0, 1fr) auto auto;
         align-items: center;
         gap: 12px;
         padding: 10px 12px;
@@ -83,6 +92,28 @@ export default class RegiaTimeline {
       .regia-timeline__time {
         font-variant-numeric: tabular-nums;
         white-space: nowrap;
+      }
+
+      .regia-timeline__clock {
+        display: grid;
+        gap: 4px;
+        min-width: 118px;
+        padding: 7px 10px;
+        border: 1px solid rgba(255, 255, 255, 0.32);
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .regia-timeline__clock-label {
+        font-size: 8px;
+        letter-spacing: 0.14em;
+        opacity: 0.55;
+      }
+
+      .regia-timeline__clock-value {
+        font-size: 17px;
+        font-weight: 600;
+        letter-spacing: 0;
       }
 
       .regia-timeline__track {
@@ -158,6 +189,10 @@ export default class RegiaTimeline {
           grid-column: 1 / -1;
           min-width: 0;
         }
+
+        .regia-timeline__clock {
+          min-width: 105px;
+        }
       }
     `;
     document.head.appendChild(style);
@@ -181,6 +216,10 @@ export default class RegiaTimeline {
         <div class="regia-timeline__playhead"></div>
       </div>
       <span class="regia-timeline__hint">T hide · click to seek</span>
+      <div class="regia-timeline__clock" title="Tempo preciso della traccia audio">
+        <span class="regia-timeline__clock-label">MASTER TIME</span>
+        <span class="regia-timeline__clock-value">00:00.000</span>
+      </div>
     `;
     document.body.appendChild(element);
     return element;
@@ -246,6 +285,7 @@ export default class RegiaTimeline {
     this.progress.style.width = percentage;
     this.playhead.style.left = percentage;
     this.currentTimeLabel.textContent = formatTime(currentTime);
+    this.preciseTimeLabel.textContent = formatPreciseTime(currentTime);
     this.sceneLabel.textContent = `SCENE ${this.sceneManager.currentIndex + 1} — ${this.sceneManager.currentScene?.title ?? "—"}`;
     this.track.setAttribute("aria-valuenow", String(Math.round(ratio * 100)));
   }
