@@ -10,8 +10,7 @@
     "fps": 30,
     "durationSeconds": 480,
     "ceiling": { "x": 0, "y": 0, "width": 3600, "height": 1200 },
-    "screenFrame": { "x": 840, "y": 1200, "width": 1920, "height": 1200 },
-    "screen": { "x": 840, "y": 1260, "width": 1920, "height": 1080 }
+    "screen": { "x": 840, "y": 1200, "width": 1920, "height": 1200 }
   },
   "timeline": {
     "audio": "/inota/audio/master.mp3",
