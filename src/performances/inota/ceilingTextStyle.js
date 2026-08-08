@@ -17,7 +17,7 @@ export default function installInotaCeilingTextStyle() {
       justify-content: center !important;
       box-sizing: border-box !important;
       padding: 4vh 7vw !important;
-      color: rgba(255, 255, 255, 0.98) !important;
+      color: var(--inota-ceiling-text, rgba(255, 255, 255, 0.98)) !important;
       font-size: clamp(28px, 2.35vw, 84px) !important;
       line-height: 1.12 !important;
       text-align: center !important;
