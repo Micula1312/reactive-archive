@@ -33,7 +33,7 @@
       "ceilingTextColor": "#ffffff",
       "clips": [
         { "src": "/inota/videos/03-Loader.mp4", "start": 0, "in": 0, "out": null },
-        { "src": "/inota/videos/Video-01.mp4" , "start": 35, "in": 0, "out": null }
+        { "src": "/inota/videos/Video-01.mp4", "start": 35, "in": 0, "out": null }
       ],
       "filter": { "preset": "defocus", "intensity": 0.45 }
     },
@@ -48,16 +48,8 @@
       "ceilingTextColor": "#ffffff",
       "clips": [
         { "src": "/inota/videos/06-Foto.mp4", "start": 0, "in": 0, "out": null },
-        { "src": "/inota/videos/06-Foto-2.mp4", "start": 35, "in": 0, "out": null }
-      ],
-      "cueClips": [
-        {
-          "text": "This is hypnosis.",
-          "src": "/inota/videos/04-Video-Verticale.mp4",
-          "in": 0,
-          "out": null,
-          "loop": true
-        }
+        { "src": "/inota/videos/06-Foto-2.mp4", "start": 35, "in": 0, "out": null },
+        { "src": "/inota/videos/04-Video-Verticale.mp4", "start": 55, "in": 0, "out": null, "loop": true }
       ],
       "filter": { "preset": "defocus", "intensity": 0.35 }
     },
@@ -116,4 +108,3 @@
     }
   ]
 }
-
