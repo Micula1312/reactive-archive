@@ -21,12 +21,19 @@ export default {
     ...data.timeline,
     audio: resolvePublicAsset(data.timeline.audio)
   },
-  scenes: data.scenes.map((scene) => ({
-    ...scene,
-    output: data.output,
-    src: resolvePublicAsset(scene.src),
-    subtitleCues: dialogues[scene.dialogue ?? scene.id],
-    subtitleLayout: "ceiling",
-    patch: scene.module ? hydraModules[scene.module] : undefined
-  }))
+  scenes: data.scenes.map((scene) => {
+    const clips = Array.isArray(scene.clips)
+      ? scene.clips.map(resolvePublicAsset)
+      : [];
+
+    return {
+      ...scene,
+      output: data.output,
+      src: clips[0] ?? resolvePublicAsset(scene.src),
+      sequence: clips.slice(1),
+      subtitleCues: dialogues[scene.dialogue ?? scene.id],
+      subtitleLayout: "ceiling",
+      patch: scene.module ? hydraModules[scene.module] : undefined
+    };
+  })
 };
