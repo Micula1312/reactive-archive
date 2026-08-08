@@ -20,7 +20,7 @@
     "reactiveSource": "track"
   },
   "subtitleTyping": true,
-  "subtitleTypingSpeed": 38,
+  "subtitleTypingSpeed": 36,
   "scenes": [
     {
       "id": "scene-01",
@@ -31,7 +31,7 @@
       "dialogue": "scene01",
       "ceilingColor": "#000000",
       "ceilingTextColor": "#ffffff",
-      "clips": ["/inota/videos/Video-01.mp4", "/inota/videos/03-Loader.mp4"],
+      "clips": ["/inota/videos/03-Loader.mp4", "/inota/videos/Video-01.mp4" ],
       "loopSequence": true,
       "filter": { "preset": "defocus", "intensity": 0.45 }
     },
@@ -103,3 +103,4 @@
     }
   ]
 }
+
