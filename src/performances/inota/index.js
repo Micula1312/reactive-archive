@@ -1,4 +1,5 @@
 import data from "./performance.json";
+import dialogues from "./dialogues.js";
 import hydraModules from "./hydra/index.js";
 
 const baseUrl = import.meta.env.BASE_URL;
@@ -20,6 +21,8 @@ export default {
   scenes: data.scenes.map((scene) => ({
     ...scene,
     output: data.output,
+    subtitleCues: dialogues[scene.dialogue ?? scene.id],
+    subtitleLayout: "ceiling",
     patch: scene.module ? hydraModules[scene.module] : undefined
   }))
 };
