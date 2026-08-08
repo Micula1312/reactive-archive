@@ -12,6 +12,29 @@ function resolvePublicAsset(src) {
 
 installInotaCeilingTextStyle();
 
+function resolveCueClips(scene, subtitleCues) {
+  const raw = Array.isArray(scene.cueClips)
+    ? scene.cueClips
+    : scene.cueClip
+      ? [scene.cueClip]
+      : [];
+
+  return raw
+    .filter((item) => item?.src)
+    .map((item) => {
+      const needle = String(item.text ?? "").trim().toLowerCase();
+      const matchingCue = subtitleCues.find((cue) =>
+        String(cue?.text ?? "").toLowerCase().includes(needle)
+      );
+
+      return {
+        ...item,
+        src: resolvePublicAsset(item.src),
+        time: Number(matchingCue?.time ?? item.time ?? 0)
+      };
+    });
+}
+
 export default {
   ...data,
   audioPolicy: "timeline-track",
@@ -27,16 +50,6 @@ export default {
       : [];
     const subtitleCues = dialogues[scene.dialogue ?? scene.id] ?? [];
 
-    let cueClip;
-    if (scene.cueClip?.src) {
-      const matchingCue = subtitleCues.find((cue) => cue.text === scene.cueClip.text);
-      cueClip = {
-        ...scene.cueClip,
-        src: resolvePublicAsset(scene.cueClip.src),
-        time: Number(matchingCue?.time ?? scene.cueClip.time ?? 0)
-      };
-    }
-
     return {
       ...scene,
       output: data.output,
@@ -44,7 +57,9 @@ export default {
       sequence: clips.slice(1),
       subtitleCues,
       subtitleLayout: "ceiling",
-      cueClip,
+      subtitleTyping: scene.subtitleTyping ?? data.subtitleTyping ?? false,
+      subtitleTypingSpeed: scene.subtitleTypingSpeed ?? data.subtitleTypingSpeed ?? 38,
+      cueClips: resolveCueClips(scene, subtitleCues),
       patch: scene.module ? hydraModules[scene.module] : undefined
     };
   })
