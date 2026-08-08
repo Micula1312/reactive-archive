@@ -40,6 +40,7 @@ export default class HydraScene {
     });
 
     const addBlock = ({ x, y, width, height }, color = "#000") => {
+      if (width <= 0 || height <= 0) return;
       const block = document.createElement("div");
       Object.assign(block.style, {
         position: "absolute",
@@ -54,25 +55,44 @@ export default class HydraScene {
 
     const ceiling = output.ceiling;
     const screen = output.screen;
+    const screenFrame = output.screenFrame ?? screen;
 
-    // Permanent black areas beside the 1920x1200 front screen.
-    addBlock({ x: 0, y: screen.y, width: screen.x, height: screen.height });
+    // The festival mask allocates a 1920x1200 lower frame, while the actual
+    // authored front-screen content is 1920x1080. Keep that 16:9 area centred.
     addBlock({
-      x: screen.x + screen.width,
-      y: screen.y,
-      width: output.width - (screen.x + screen.width),
-      height: screen.height
+      x: 0,
+      y: screenFrame.y,
+      width: screenFrame.x,
+      height: screenFrame.height
+    });
+    addBlock({
+      x: screenFrame.x + screenFrame.width,
+      y: screenFrame.y,
+      width: output.width - (screenFrame.x + screenFrame.width),
+      height: screenFrame.height
     });
 
-    // INOTA test / composition helper:
-    // a scene can keep its generated content on SCREEN while assigning
-    // a completely independent solid colour to the CEILING.
+    // 60 px black above + below the 1920x1080 content inside the 1920x1200 frame.
+    addBlock({
+      x: screenFrame.x,
+      y: screenFrame.y,
+      width: screenFrame.width,
+      height: screen.y - screenFrame.y
+    });
+    addBlock({
+      x: screenFrame.x,
+      y: screen.y + screen.height,
+      width: screenFrame.width,
+      height: (screenFrame.y + screenFrame.height) - (screen.y + screen.height)
+    });
+
+    // Independent ceiling layer. For the current test every scene keeps
+    // Hydra on the 16:9 front screen and assigns a flat colour to the ceiling.
     if (surfaceMode === "screen") {
       addBlock(ceiling, this.scene.ceilingColor ?? "#000");
     } else if (surfaceMode === "ceiling") {
       addBlock(screen);
     } else if (this.scene.ceilingColor) {
-      // Even in "both" mode, an explicit ceilingColor wins over Hydra on the ceiling.
       addBlock(ceiling, this.scene.ceilingColor);
     }
 
