@@ -7,6 +7,8 @@ export default class InotaCompositeScene {
     this.frame = null;
     this.sequence = [];
     this.sequenceIndex = 0;
+    this.sceneStartedAt = 0;
+    this.cueClipTriggered = false;
     this.handleEnded = this.handleEnded.bind(this);
   }
 
@@ -21,14 +23,13 @@ export default class InotaCompositeScene {
     return sequence;
   }
 
-  async playCurrent() {
-    const src = this.sequence[this.sequenceIndex];
+  async playSource(src, { loop = false } = {}) {
     if (!src) return;
 
     this.video.pause();
     this.video.src = src;
-    this.video.loop = this.sequence.length === 1 && (this.scene.loopSequence ?? true);
-    this.video.currentTime = Math.max(0, Number(this.scene.videoIn ?? 0));
+    this.video.loop = loop;
+    this.video.currentTime = 0;
     this.video.load();
     this.video.style.visibility = "hidden";
     await this.video.play().catch((error) => {
@@ -36,7 +37,17 @@ export default class InotaCompositeScene {
     });
   }
 
+  async playCurrent() {
+    const src = this.sequence[this.sequenceIndex];
+    if (!src) return;
+
+    await this.playSource(src, {
+      loop: this.sequence.length === 1 && (this.scene.loopSequence ?? true)
+    });
+  }
+
   async handleEnded() {
+    if (this.cueClipTriggered) return;
     if (this.sequence.length <= 1) return;
 
     if (this.sequenceIndex < this.sequence.length - 1) {
@@ -67,10 +78,11 @@ export default class InotaCompositeScene {
     }
 
     this.sequenceIndex = 0;
+    this.sceneStartedAt = performance.now();
+    this.cueClipTriggered = false;
     this.video.addEventListener("ended", this.handleEnded);
     await this.playCurrent();
 
-    // CEILING: solid colour field. Text is rendered independently by SubtitleManager.
     const layer = document.createElement("div");
     layer.dataset.sceneLayer = "inota-composite";
     Object.assign(layer.style, {
@@ -117,13 +129,24 @@ export default class InotaCompositeScene {
   }
 
   setParameter() {}
-  update() {}
+
+  update() {
+    const cueClip = this.scene.cueClip;
+    if (!cueClip?.src || this.cueClipTriggered) return;
+
+    const elapsed = (performance.now() - this.sceneStartedAt) / 1000;
+    if (elapsed < Number(cueClip.time ?? 0)) return;
+
+    this.cueClipTriggered = true;
+    this.playSource(cueClip.src, { loop: cueClip.loop ?? true });
+  }
 
   async exit() {
     this.video.pause();
     this.video.removeEventListener("ended", this.handleEnded);
     this.sequence = [];
     this.sequenceIndex = 0;
+    this.cueClipTriggered = false;
     this.layer?.remove();
     this.layer = null;
     this.frame = null;
@@ -132,6 +155,8 @@ export default class InotaCompositeScene {
 
   restart() {
     this.sequenceIndex = 0;
+    this.sceneStartedAt = performance.now();
+    this.cueClipTriggered = false;
     return this.playCurrent();
   }
 }
