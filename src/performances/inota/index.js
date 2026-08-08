@@ -24,6 +24,7 @@ export default {
   scenes: data.scenes.map((scene) => ({
     ...scene,
     output: data.output,
+    src: resolvePublicAsset(scene.src),
     subtitleCues: dialogues[scene.dialogue ?? scene.id],
     subtitleLayout: "ceiling",
     patch: scene.module ? hydraModules[scene.module] : undefined
