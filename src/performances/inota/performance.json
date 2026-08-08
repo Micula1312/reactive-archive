@@ -1,0 +1,30 @@
+{
+  "id": "inota",
+  "title": "INOTA — Theatre Room",
+  "author": "Micol Gelsi",
+  "duration": "08:00",
+  "minimumVisibility": 0.32,
+  "output": {
+    "width": 3600,
+    "height": 2400,
+    "fps": 30,
+    "durationSeconds": 480,
+    "ceiling": { "x": 0, "y": 0, "width": 3600, "height": 1200 },
+    "screen": { "x": 840, "y": 1200, "width": 1920, "height": 1200 }
+  },
+  "timeline": {
+    "audio": "/inota/audio/master.wav",
+    "autoplay": true,
+    "loop": false,
+    "useAsClock": true,
+    "reactiveSource": "track"
+  },
+  "scenes": [
+    { "id": "threshold", "order": 1, "start": "00:00", "title": "THRESHOLD", "type": "hydra", "module": "threshold", "surfaceMode": "both" },
+    { "id": "body", "order": 2, "start": "01:10", "title": "BODY", "type": "hydra", "module": "body", "surfaceMode": "screen" },
+    { "id": "spill", "order": 3, "start": "02:20", "title": "SPILL", "type": "hydra", "module": "spill", "surfaceMode": "ceiling" },
+    { "id": "rupture", "order": 4, "start": "03:35", "title": "RUPTURE", "type": "hydra", "module": "rupture", "surfaceMode": "both" },
+    { "id": "expansion", "order": 5, "start": "05:00", "title": "EXPANSION", "type": "hydra", "module": "expansion", "surfaceMode": "both" },
+    { "id": "afterimage", "order": 6, "start": "06:35", "title": "AFTERIMAGE", "type": "hydra", "module": "afterimage", "surfaceMode": "both" }
+  ]
+}
