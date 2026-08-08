@@ -8,7 +8,8 @@ export default class InotaCompositeScene {
     this.sequence = [];
     this.sequenceIndex = 0;
     this.sceneStartedAt = 0;
-    this.cueClipTriggered = false;
+    this.triggeredCueClips = new Set();
+    this.cueModeActive = false;
     this.handleEnded = this.handleEnded.bind(this);
   }
 
@@ -47,7 +48,7 @@ export default class InotaCompositeScene {
   }
 
   async handleEnded() {
-    if (this.cueClipTriggered) return;
+    if (this.cueModeActive) return;
     if (this.sequence.length <= 1) return;
 
     if (this.sequenceIndex < this.sequence.length - 1) {
@@ -79,7 +80,8 @@ export default class InotaCompositeScene {
 
     this.sequenceIndex = 0;
     this.sceneStartedAt = performance.now();
-    this.cueClipTriggered = false;
+    this.triggeredCueClips.clear();
+    this.cueModeActive = false;
     this.video.addEventListener("ended", this.handleEnded);
     await this.playCurrent();
 
@@ -131,14 +133,19 @@ export default class InotaCompositeScene {
   setParameter() {}
 
   update() {
-    const cueClip = this.scene.cueClip;
-    if (!cueClip?.src || this.cueClipTriggered) return;
+    const cueClips = Array.isArray(this.scene.cueClips) ? this.scene.cueClips : [];
+    if (!cueClips.length) return;
 
     const elapsed = (performance.now() - this.sceneStartedAt) / 1000;
-    if (elapsed < Number(cueClip.time ?? 0)) return;
 
-    this.cueClipTriggered = true;
-    this.playSource(cueClip.src, { loop: cueClip.loop ?? true });
+    cueClips.forEach((cueClip, index) => {
+      if (!cueClip?.src || this.triggeredCueClips.has(index)) return;
+      if (elapsed < Number(cueClip.time ?? 0)) return;
+
+      this.triggeredCueClips.add(index);
+      this.cueModeActive = true;
+      this.playSource(cueClip.src, { loop: cueClip.loop ?? true });
+    });
   }
 
   async exit() {
@@ -146,7 +153,8 @@ export default class InotaCompositeScene {
     this.video.removeEventListener("ended", this.handleEnded);
     this.sequence = [];
     this.sequenceIndex = 0;
-    this.cueClipTriggered = false;
+    this.triggeredCueClips.clear();
+    this.cueModeActive = false;
     this.layer?.remove();
     this.layer = null;
     this.frame = null;
@@ -156,7 +164,8 @@ export default class InotaCompositeScene {
   restart() {
     this.sequenceIndex = 0;
     this.sceneStartedAt = performance.now();
-    this.cueClipTriggered = false;
+    this.triggeredCueClips.clear();
+    this.cueModeActive = false;
     return this.playCurrent();
   }
 }
