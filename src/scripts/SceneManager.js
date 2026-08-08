@@ -1,5 +1,6 @@
 import TextScene from "./scenes/TextScene.js";
 import HydraScene from "./scenes/HydraScene.js";
+import InotaCompositeScene from "./scenes/InotaCompositeScene.js";
 import { getSceneControls, writeTarget } from "./LiveControls.js";
 
 export default class SceneManager {
@@ -122,6 +123,7 @@ export default class SceneManager {
     const context = { scene, video: this.video, renderer: this.renderer };
     if (scene.type === "text") return new TextScene(context);
     if (scene.type === "hydra") return new HydraScene(context);
+    if (scene.type === "inota-composite") return new InotaCompositeScene(context);
     return null;
   }
 
@@ -136,7 +138,7 @@ export default class SceneManager {
 
     writeTarget(scene, control.target, value);
 
-    if (scene.type === "video") {
+    if (scene.type === "video" || scene.type === "inota-composite") {
       this.renderer.setEffect(scene.filter ?? {});
       this.renderer.setReactivity(scene.reactivity ?? 1);
     }
@@ -149,7 +151,7 @@ export default class SceneManager {
     const nextPaused = typeof force === "boolean" ? force : !this.paused;
     this.paused = nextPaused;
 
-    if (this.currentScene?.type === "video") {
+    if (this.currentScene?.type === "video" || this.currentScene?.type === "inota-composite") {
       if (nextPaused) {
         this.video.pause();
       } else if (this.started) {
