@@ -16,16 +16,16 @@ export default function installInotaCeilingTextStyle() {
       align-items: center !important;
       justify-content: center !important;
       box-sizing: border-box !important;
-      padding: 4vh 7vw !important;
+      padding: 4vh 4vw !important;
       color: var(--inota-ceiling-text, rgba(255, 255, 255, 0.98)) !important;
-      font-size: clamp(28px, 2.35vw, 84px) !important;
+      font-size: clamp(24px, 1.95vw, 70px) !important;
       line-height: 1.12 !important;
       text-align: center !important;
     }
 
     body[data-performance="inota"] #performance-subtitles .subtitle-window {
       display: block !important;
-      width: min(82%, 2900px) !important;
+      width: min(92%, 3250px) !important;
       max-width: none !important;
       padding: 0 !important;
       margin: 0 !important;
