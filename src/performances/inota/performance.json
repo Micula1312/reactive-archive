@@ -94,11 +94,11 @@
     {
       "id": "scene-05",
       "order": 5,
-      "start": "06:05",
+      "start": "06:00",
       "title": "SCENE 05 — RED / TREE + BLIVET",
       "type": "inota-composite",
       "dialogue": "scene05",
-      "ceilingColor": "#ff0000",
+      "ceilingColor": "#000000",
       "ceilingTextColor": "#ffffff",
       "clips": [
         { "src": "/inota/videos/17-Ex-Albero.mp4", "start": 0, "in": 0, "out": null },
