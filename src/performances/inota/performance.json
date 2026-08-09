@@ -34,7 +34,7 @@
       "reactivity": 0,
       "clips": [
         { "src": "/inota/videos/03-Loader.mp4", "start": 0, "in": 0, "out": null },
-        { "src": "/inota/videos/Video-01.mp4", "start": 35, "in": 0, "out": null },
+        { "src": "/inota/videos/Video-01.mp4", "start": 27, "in": 0, "out": null },
         { "src": "/inota/videos/08-Rotazione.mp4", "start": 58, "in": 0, "out": null }
       ],
       "filter": {}
