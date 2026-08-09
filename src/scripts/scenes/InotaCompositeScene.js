@@ -7,6 +7,8 @@ export default class InotaCompositeScene {
     this.layer = null;
     this.frame = null;
     this.flashLayer = null;
+    this.ceilingReactiveLayer = null;
+    this.screenReactiveLayer = null;
     this.flashLevel = 0;
     this.sequence = [];
     this.sequenceIndex = 0;
@@ -143,7 +145,9 @@ export default class InotaCompositeScene {
       opacity: "1",
       zIndex: "2",
       pointerEvents: "none",
-      background: "#000"
+      background: "#000",
+      transformOrigin: "center center",
+      willChange: "transform"
     });
     this.video.muted = true;
     this.video.playsInline = true;
@@ -161,9 +165,7 @@ export default class InotaCompositeScene {
       throw new Error("InotaCompositeScene: output INOTA mancante.");
     }
 
-    // Performance-safe INOTA mode: clips are rendered by the browser's native
-    // video compositor at 1920x1200 instead of being uploaded to a 3600x2400
-    // WebGL texture every frame. WebGL stays out of the video path entirely.
+    // Performance-safe INOTA mode: native video stays outside WebGL.
     this.renderer?.setSurfaceMode?.("screen");
     this.renderer?.setReactivity?.(0);
     this.renderer?.setEffect?.({});
@@ -202,8 +204,40 @@ export default class InotaCompositeScene {
       background: this.scene.ceilingColor ?? "#000000"
     });
 
+    // Cheap white overlay: on high-frequency peaks the black ceiling flashes/inverts
+    // without changing scene background or touching the video decoder.
+    const ceilingReactiveLayer = document.createElement("div");
+    Object.assign(ceilingReactiveLayer.style, {
+      position: "absolute",
+      left: "0",
+      top: "0",
+      width: "100%",
+      height: "50%",
+      zIndex: "3",
+      background: "#ffffff",
+      opacity: "0",
+      pointerEvents: "none",
+      willChange: "opacity"
+    });
+
+    // Lightweight overlay only over the 1920x1200 screen area.
+    const screenReactiveLayer = document.createElement("div");
+    Object.assign(screenReactiveLayer.style, {
+      position: "absolute",
+      left: "23.333333%",
+      top: "50%",
+      width: "53.333333%",
+      height: "50%",
+      zIndex: "3",
+      background: "#ff0000",
+      opacity: "0",
+      pointerEvents: "none",
+      willChange: "opacity"
+    });
+
     frame.append(ceiling);
     this.mountNativeVideo(frame);
+    frame.append(ceilingReactiveLayer, screenReactiveLayer);
     layer.append(frame);
     document.body.append(layer);
 
@@ -227,6 +261,8 @@ export default class InotaCompositeScene {
     this.layer = layer;
     this.frame = frame;
     this.flashLayer = flashLayer;
+    this.ceilingReactiveLayer = ceilingReactiveLayer;
+    this.screenReactiveLayer = screenReactiveLayer;
 
     this.sequence = this.buildSequence();
     const timelineClips = this.getTimelineClips();
@@ -300,12 +336,38 @@ export default class InotaCompositeScene {
       this.video.pause();
     }
 
-    // Keep the lightweight audio-reactive red flash; it is a DOM overlay and
-    // does not force the video through the WebGL shader pipeline.
-    const threshold = Number(this.scene.highFlashThreshold ?? 0.62);
-    const maxOpacity = Number(this.scene.highFlashMaxOpacity ?? 0.78);
-    const decay = Number(this.scene.highFlashDecay ?? 0.82);
+    const level = Math.max(0, Math.min(1, Number(audioData.level) || 0));
+    const bass = Math.max(0, Math.min(1, Number(audioData.bass) || 0));
     const high = Math.max(0, Math.min(1, Number(audioData.high) || 0));
+
+    // Native-video reactivity: only a tiny GPU-composited scale pulse on bass.
+    // No CSS filters and no WebGL texture upload, so playback stays smooth.
+    const scaleAmount = Number(this.scene.videoBassScale ?? 0.018);
+    const videoScale = 1 + bass * scaleAmount;
+    this.video.style.transform = `scale(${videoScale.toFixed(4)})`;
+
+    // Ceiling: black by default, quick white/invert-like peaks on highs.
+    if (this.ceilingReactiveLayer) {
+      const ceilingThreshold = Number(this.scene.ceilingHighThreshold ?? 0.52);
+      const ceilingOpacity = high > ceilingThreshold
+        ? Math.min(0.88, (high - ceilingThreshold) / Math.max(0.001, 1 - ceilingThreshold))
+        : Math.max(0, level - 0.72) * 0.18;
+      this.ceilingReactiveLayer.style.opacity = String(ceilingOpacity);
+    }
+
+    // Screen: subtler red high-frequency flash over the native clip.
+    if (this.screenReactiveLayer) {
+      const screenThreshold = Number(this.scene.screenHighThreshold ?? 0.66);
+      const screenOpacity = high > screenThreshold
+        ? Math.min(0.28, ((high - screenThreshold) / Math.max(0.001, 1 - screenThreshold)) * 0.28)
+        : 0;
+      this.screenReactiveLayer.style.opacity = String(screenOpacity);
+    }
+
+    // Whole-master red flash kept for the strongest high peaks only.
+    const threshold = Number(this.scene.highFlashThreshold ?? 0.78);
+    const maxOpacity = Number(this.scene.highFlashMaxOpacity ?? 0.48);
+    const decay = Number(this.scene.highFlashDecay ?? 0.78);
 
     if (high > threshold) {
       const normalized = Math.min(1, (high - threshold) / Math.max(0.001, 1 - threshold));
@@ -336,6 +398,8 @@ export default class InotaCompositeScene {
     this.layer = null;
     this.frame = null;
     this.flashLayer = null;
+    this.ceilingReactiveLayer = null;
+    this.screenReactiveLayer = null;
     document.body.style.removeProperty("--inota-ceiling-text");
   }
 
