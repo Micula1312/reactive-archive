@@ -45,6 +45,12 @@ export default function installInotaCeilingTextStyle() {
       text-align: center !important;
       text-wrap: balance;
     }
+
+    /* In the performance-safe native-video layout, the second DIV inside the
+       3:2 frame is the lightweight ceiling high-frequency overlay. */
+    body[data-performance="inota"] [data-scene-layer="inota-composite"] > div > div:nth-of-type(2) {
+      background: #ff0000 !important;
+    }
   `;
 
   document.head.appendChild(style);
