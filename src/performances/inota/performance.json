@@ -57,7 +57,7 @@
       "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/11-Foresta-Immagini.mp4", "start": 3, "in": 0, "out": null },
-        { "src": "/inota/videos/10-Foresta-Numeri.mp4", "start": 48, "in": 0, "out": null, "loop": true }
+        { "src": "/inota/videos/10-Foresta-Numeri.mp4", "start": 48, "in": 0, "out": null, "end": 92 }
       ], "filter": {}
     },
     {
@@ -66,7 +66,7 @@
       "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/15-Volto-Corpi.mp4", "start": 3, "in": 0, "out": null },
-        { "src": "/inota/videos/16-Cacofonia.mp4", "start": 43, "in": 0, "out": null }
+        { "src": "/inota/videos/16-Cacofonia.mp4", "start": 43, "in": 0, "out": null, "end": 60 }
       ], "filter": {}
     },
     {
@@ -74,8 +74,8 @@
       "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
       "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
-        { "src": "/inota/videos/18-Ex-Albero.mp4", "start": 3, "in": 5, "out": null },
-        { "src": "/inota/videos/20-Blivet.mp4", "start": 58, "in": 10, "out": 12 }
+        { "src": "/inota/videos/18-Ex-Albero.mp4", "start": 3, "in": 3, "out": null },
+        { "src": "/inota/videos/20-Blivet.mp4", "start": 59, "in": 1, "out": 3 }
       ], "filter": {}
     }
   ]

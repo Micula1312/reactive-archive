@@ -73,7 +73,7 @@ export default {
     cue(1.000, 8.500, "A memory\nthat does not capture,\nbut returns."),
     cue(10.000, 20.700, "A network\nthat does not separate,\nbut lets things pass."),
     cue(25.000, 30.000, "ELISA"),
-    cue(32.000, 42.000, "an audiovisual tale\nby BLIVET"),
-    cue(50.000, 58.000, "Benedetta Marino\nBeatrice Resta\nMicol Gelsi")
+    cue(32.000, 46.000, "an audiovisual tale\nby BLIVET"),
+    cue(50.000, 59.000, "Benedetta Marino\nBeatrice Resta\nMicol Gelsi")
   ]
 };
