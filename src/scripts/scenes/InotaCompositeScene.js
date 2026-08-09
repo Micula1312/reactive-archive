@@ -72,6 +72,7 @@ export default class InotaCompositeScene {
     const requestId = ++this.playRequestId;
 
     this.video.pause();
+    this.video.style.visibility = "hidden";
     this.video.src = src;
     this.video.loop = loop;
     this.video.load();
@@ -91,6 +92,7 @@ export default class InotaCompositeScene {
 
     try {
       await this.video.play();
+      if (requestId === this.playRequestId) this.video.style.visibility = "visible";
     } catch (error) {
       if (error?.name !== "AbortError") {
         console.warn("INOTA: impossibile avviare la clip video.", error);
@@ -144,7 +146,7 @@ export default class InotaCompositeScene {
       height: "50%",
       objectFit: "cover",
       objectPosition: "center center",
-      visibility: "visible",
+      visibility: "hidden",
       opacity: "1",
       zIndex: "2",
       pointerEvents: "none",
@@ -328,6 +330,7 @@ export default class InotaCompositeScene {
       const active = timelineClips[this.activeTimelineClipIndex];
       if (active && this.hasNumber(active.out) && this.video.currentTime >= Number(active.out)) {
         this.video.pause();
+        this.video.style.visibility = "hidden";
       }
     }
 
@@ -352,6 +355,7 @@ export default class InotaCompositeScene {
       this.video.currentTime >= Number(activeCue.out)
     ) {
       this.video.pause();
+      this.video.style.visibility = "hidden";
     }
 
     const level = Math.max(0, Math.min(1, Number(audioData.level) || 0));
@@ -359,8 +363,6 @@ export default class InotaCompositeScene {
     const highTransient = Math.max(0, high - this.previousHigh);
     this.previousHigh = high;
 
-    // Keep native video completely still: only overlay opacity reacts to audio.
-    // This is the smooth path that avoids re-compositing the video every frame.
     this.video.style.transform = "none";
 
     if (this.ceilingReactiveLayer) {
@@ -447,6 +449,7 @@ export default class InotaCompositeScene {
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
     this.activeTimelineClipIndex = -1;
+    this.video.style.visibility = "hidden";
 
     const timelineClips = this.getTimelineClips();
     if (timelineClips.length) {
