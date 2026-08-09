@@ -323,6 +323,33 @@ function prepareMicrophone() {
   return microphonePreparationPromise;
 }
 
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function runInotaSyncPreroll() {
+  if (performanceName !== "inota") return;
+
+  // Technical slate recorded by OBS BEFORE master time 00:00.
+  // The first clean frame after it disappears is the exact cut point.
+  const marker = document.createElement("div");
+  marker.dataset.inotaSyncMarker = "true";
+  Object.assign(marker.style, {
+    position: "fixed",
+    inset: "0",
+    zIndex: "2147483647",
+    background: "#ff00ff",
+    pointerEvents: "none"
+  });
+  document.body.append(marker);
+  await wait(1000);
+  marker.remove();
+
+  // Give the browser one complete 30 fps frame to present the clean master
+  // before the audio clock is started.
+  await wait(34);
+}
+
 async function startExperience() {
   if (started) return;
 
@@ -339,15 +366,40 @@ async function startExperience() {
     }
 
     configurePlaybackMode();
-    started = true;
-    sceneManager.setStarted(true);
-    lastSoundTime = performance.now();
 
-    if (timeline) {
-      await ensureTimelineAudio({ restart: true });
+    // INOTA final capture: prepare scene 0 while the timeline is still stopped,
+    // show a 1 s magenta sync slate, then start master time at the clean cut.
+    if (timeline && performanceName === "inota") {
+      started = false;
+      sceneManager.setStarted(false);
+      await audioManager.setCueTrack(timeline.audio, {
+        play: false,
+        audible: !audioManager.outputMuted && !soloMicEnabled,
+        activate: !soloMicEnabled,
+        forceActivate: !soloMicEnabled,
+        restart: true
+      });
+      audioManager.cueAudio.pause();
+      audioManager.cueAudio.currentTime = 0;
+      await sceneManager.load(0);
+      await runInotaSyncPreroll();
+
+      started = true;
+      sceneManager.setStarted(true);
+      lastSoundTime = performance.now();
+      audioManager.cueAudio.currentTime = 0;
+      await audioManager.cueAudio.play();
+    } else {
+      started = true;
+      sceneManager.setStarted(true);
+      lastSoundTime = performance.now();
+
+      if (timeline) {
+        await ensureTimelineAudio({ restart: true });
+      }
+
+      await sceneManager.load(0);
     }
-
-    await sceneManager.load(0);
 
     ui.setStatus(
       timeline
