@@ -26,7 +26,10 @@ export default class Renderer {
       antialias: false,
       alpha: false,
       powerPreference: "high-performance",
-      preserveDrawingBuffer: Boolean(this.output)
+      // OBS captures the rendered browser surface directly. Keeping the previous
+      // WebGL frame in CPU-readable memory is unnecessary and very expensive at
+      // 3600x2400, so never preserve the drawing buffer for INOTA playback.
+      preserveDrawingBuffer: false
     });
     this.renderer.setPixelRatio(this.output ? 1 : Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setClearColor(0x000000, 1);
