@@ -3,6 +3,7 @@ export default class InotaCompositeScene {
     this.scene = scene;
     this.video = video;
     this.renderer = renderer;
+    this.videoHome = video.parentElement;
     this.layer = null;
     this.frame = null;
     this.flashLayer = null;
@@ -68,7 +69,6 @@ export default class InotaCompositeScene {
     this.video.pause();
     this.video.src = src;
     this.video.loop = loop;
-    this.video.style.visibility = "hidden";
     this.video.load();
 
     await this.waitForMetadata(requestId);
@@ -128,37 +128,46 @@ export default class InotaCompositeScene {
     await this.playCurrent();
   }
 
+  mountNativeVideo(frame) {
+    frame.append(this.video);
+    Object.assign(this.video.style, {
+      display: "block",
+      position: "absolute",
+      left: "23.333333%",
+      top: "50%",
+      width: "53.333333%",
+      height: "50%",
+      objectFit: "cover",
+      objectPosition: "center center",
+      visibility: "visible",
+      opacity: "1",
+      zIndex: "2",
+      pointerEvents: "none",
+      background: "#000"
+    });
+    this.video.muted = true;
+    this.video.playsInline = true;
+  }
+
+  restoreNativeVideo() {
+    this.video.pause();
+    if (this.videoHome) this.videoHome.append(this.video);
+    this.video.removeAttribute("style");
+  }
+
   async enter() {
     const output = this.scene.output;
     if (!output?.ceiling || !output?.screen) {
       throw new Error("InotaCompositeScene: output INOTA mancante.");
     }
 
+    // Performance-safe INOTA mode: clips are rendered by the browser's native
+    // video compositor at 1920x1200 instead of being uploaded to a 3600x2400
+    // WebGL texture every frame. WebGL stays out of the video path entirely.
     this.renderer?.setSurfaceMode?.("screen");
-    this.renderer?.setReactivity?.(this.scene.reactivity ?? 1);
-    this.renderer?.setEffect?.(this.scene.filter ?? {});
-    if (this.renderer?.canvas?.style) this.renderer.canvas.style.visibility = "visible";
-
-    this.sequence = this.buildSequence();
-    const timelineClips = this.getTimelineClips();
-    if (!this.sequence.length && !timelineClips.length) {
-      throw new Error(`InotaCompositeScene: clip mancante per ${this.scene.id}.`);
-    }
-
-    this.sequenceIndex = 0;
-    this.sceneStartedAt = performance.now();
-    this.flashLevel = 0;
-    this.triggeredCueClips.clear();
-    this.cueModeActive = false;
-    this.activeTimelineClipIndex = -1;
-    this.video.addEventListener("ended", this.handleEnded);
-
-    if (timelineClips.length) {
-      const first = timelineClips.findIndex((clip) => Number(clip.start) <= 0);
-      if (first >= 0) await this.playTimelineClip(timelineClips[first], first);
-    } else {
-      await this.playCurrent();
-    }
+    this.renderer?.setReactivity?.(0);
+    this.renderer?.setEffect?.({});
+    if (this.renderer?.canvas?.style) this.renderer.canvas.style.visibility = "hidden";
 
     const layer = document.createElement("div");
     layer.dataset.sceneLayer = "inota-composite";
@@ -178,7 +187,7 @@ export default class InotaCompositeScene {
       width: "min(100vw, 150vh)",
       height: "min(100vh, 66.666667vw)",
       overflow: "hidden",
-      background: "transparent"
+      background: "#000"
     });
 
     const ceiling = document.createElement("div");
@@ -189,10 +198,12 @@ export default class InotaCompositeScene {
       top: "0",
       width: "100%",
       height: "50%",
+      zIndex: "1",
       background: this.scene.ceilingColor ?? "#000000"
     });
 
     frame.append(ceiling);
+    this.mountNativeVideo(frame);
     layer.append(frame);
     document.body.append(layer);
 
@@ -216,6 +227,27 @@ export default class InotaCompositeScene {
     this.layer = layer;
     this.frame = frame;
     this.flashLayer = flashLayer;
+
+    this.sequence = this.buildSequence();
+    const timelineClips = this.getTimelineClips();
+    if (!this.sequence.length && !timelineClips.length) {
+      throw new Error(`InotaCompositeScene: clip mancante per ${this.scene.id}.`);
+    }
+
+    this.sequenceIndex = 0;
+    this.sceneStartedAt = performance.now();
+    this.flashLevel = 0;
+    this.triggeredCueClips.clear();
+    this.cueModeActive = false;
+    this.activeTimelineClipIndex = -1;
+    this.video.addEventListener("ended", this.handleEnded);
+
+    if (timelineClips.length) {
+      const first = timelineClips.findIndex((clip) => Number(clip.start) <= 0);
+      if (first >= 0) await this.playTimelineClip(timelineClips[first], first);
+    } else {
+      await this.playCurrent();
+    }
 
     document.body.style.setProperty(
       "--inota-ceiling-text",
@@ -268,7 +300,8 @@ export default class InotaCompositeScene {
       this.video.pause();
     }
 
-    // High-frequency peaks create a short red flash over the whole 3600x2400 master.
+    // Keep the lightweight audio-reactive red flash; it is a DOM overlay and
+    // does not force the video through the WebGL shader pipeline.
     const threshold = Number(this.scene.highFlashThreshold ?? 0.62);
     const maxOpacity = Number(this.scene.highFlashMaxOpacity ?? 0.78);
     const decay = Number(this.scene.highFlashDecay ?? 0.82);
@@ -297,6 +330,7 @@ export default class InotaCompositeScene {
     this.triggeredCueClips.clear();
     this.cueModeActive = false;
     this.activeTimelineClipIndex = -1;
+    this.restoreNativeVideo();
     this.layer?.remove();
     this.flashLayer?.remove();
     this.layer = null;
