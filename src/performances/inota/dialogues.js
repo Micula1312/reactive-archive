@@ -11,12 +11,11 @@ const cue = (time, end, text) => ({
 // Edit texts and timings directly here without touching the ELISA performance.
 export default {
   scene01: [
-    cue(8.496, 9.449, "Can you hear me?"),
-    cue(9.767, 12.627, "Do not rush."),
-    cue(12.945, 17.712, "Water has never been in a hurry."),
-    cue(18.030, 20.890, "And yet, it has always arrived."),
-    cue(21.208, 24.068, "It has always arrived."),
-    cue(26.610, 33.602, "They told you\nthat the body is a boundary."),
+    cue(4.496, 8.449, "Can you hear me?"),
+    cue(9.767, 13.627, "Do not rush."),
+    cue(14.945, 18.712, "Water has never been in a hurry."),
+    cue(20.030, 25.890, "And yet, it has always arrived."),
+    cue(27.610, 33.602, "They told you\nthat the body is a boundary."),
     cue(36.780, 45.042, "But the body\nhas always known\nit was a current."),
     cue(48.856, 57.754, "A presence\ndoes not need to be readable\nto be real."),
     cue(61.568, 69.195, "It can appear.\nDisappear.\nReturn in another form."),
@@ -24,7 +23,7 @@ export default {
   ],
 
   scene02: [
-    cue(7.202, 16.009, "There are technologies\nthat do not need machines."),
+    cue(1.202, 12.009, "There are technologies\nthat do not need machines."),
     cue(18.211, 27.018, "They inhabit the breath.\nThe posture.\nTime."),
     cue(29.220, 36.560, "The fear of taking up space."),
     cue(38.761, 48.303, "They convince you\nthat the cage\nwas your own choice."),
