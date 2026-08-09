@@ -125,7 +125,7 @@
     {
       "id": "scene-04",
       "order": 4,
-      "start": "04:30",
+      "start": "04:20",
       "title": "SCENE 04 — FORESTE",
       "type": "inota-composite",
       "dialogue": "scene04",
@@ -134,13 +134,13 @@
       "reactivity": 0,
       "clips": [
         {
-          "src": "/inota/videos/10-Foresta-Numeri.mp4",
+          "src": "/inota/videos/11-Foresta-Immagini.mp4",
           "start": 0,
           "in": 0,
           "out": null
         },
         {
-          "src": "/inota/videos/11-Foresta-Immagini.mp4",
+          "src": "/inota/videos/10-Foresta-Numeri.mp4",
           "start": 45,
           "in": 0,
           "out": null,
@@ -178,7 +178,7 @@
     {
       "id": "scene-06",
       "order": 6,
-      "start": "07:10",
+      "start": "07:00",
       "title": "SCENE 06 — BLACK / TREE + BLIVET / CREDITS",
       "type": "inota-composite",
       "dialogue": "scene06",
@@ -189,12 +189,12 @@
         {
           "src": "/inota/videos/17-Ex-Albero.mp4",
           "start": 0,
-          "in": 0,
+          "in": 5,
           "out": null
         },
         {
           "src": "/inota/videos/20-Blivet.mp4",
-          "start": 45,
+          "start": 50,
           "in": 0,
           "out": null,
           "loop": true
