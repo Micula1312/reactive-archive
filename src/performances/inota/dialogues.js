@@ -35,29 +35,29 @@ export default {
     cue(92.000, 99.000, "Beneath every language\nthere is still a source.")
   ],
 
-  // 03:00 → 04:30
+  // 03:00 → 04:26
   scene03: [
     cue(5.000, 14.000, "Every river\nremembers the sea\nbefore it has ever reached it."),
-    cue(17.000, 27.000, "You too\nremember something\nthat was never taught to you."),
-    cue(30.000, 41.000, "They asked you\nto be transparent.\nTo be docile.\nTo be readable."),
-    cue(44.000, 53.000, "To leave traces\nthat others could interpret."),
-    cue(56.000, 64.000, "But water\ncannot be contained."),
-    cue(67.000, 74.000, "It changes form.\nIt does not belong."),
-    cue(77.000, 84.000, "It resonates through bodies\nthat recognise one another."),
-    cue(85.000, 89.500, "And it returns\nlike a tide.")
+    cue(17.000, 24.000, "You too\nremember something\nthat was never taught to you."),
+    cue(26.000, 35.000, "They asked you\nto be transparent.\nTo be docile.\nTo be readable."),
+    cue(37.000, 45.000, "To leave traces\nthat others could interpret."),
+    cue(48.000, 55.000, "But water\ncannot be contained."),
+    cue(57.000, 64.000, "It changes form.\nIt does not belong."),
+    cue(67.000, 74.000, "It resonates through bodies\nthat recognise one another."),
+    cue(75.000, 85.500, "And it returns\nlike a tide.")
   ],
 
-  // 04:30 → 06:00 — FORESTS
+  // 04:26 → 06:00 — FORESTS
   // Starts directly from the "Perhaps freedom..." block.
   scene04: [
     cue(5.000, 19.000, "Perhaps freedom\nis not escaping the system."),
     cue(22.000, 39.000, "Perhaps it is learning\nto flow through it\nwithout becoming its shape."),
     cue(43.000, 56.000, "I am not here\nto guide you."),
     cue(60.000, 74.000, "I am here\nto remind you\nthat inside you\nthere is still"),
-    cue(77.000, 89.000, "a water\nthat no one\nhas ever trained.")
+    cue(77.000, 89.000, "a light\nthat no one\nhas ever trained.")
   ],
 
-  // 06:00 → 07:10 — FACE + CACOPHONY
+  // 06:00 → 07:00 — FACE + CACOPHONY
   scene05: [
     cue(2.000, 7.000, "Women\nhave always known."),
     cue(8.500, 13.500, "Bodies\nhave always known."),
@@ -65,15 +65,15 @@ export default {
     cue(24.000, 33.000, "Perhaps this is why\nwe were taught\nto fear\nwhat overflows."),
     cue(35.000, 41.000, "What mixes.\nWhat cannot be contained."),
     cue(43.000, 50.000, "Technology too\ncan be water.\nIt can be current."),
-    cue(52.000, 58.000, "It can be a place\nthat does not surveil,\nbut connects."),
-    cue(60.000, 64.500, "A memory\nthat does not capture,\nbut returns."),
-    cue(65.000, 69.700, "A network\nthat does not separate,\nbut lets things pass.")
+    cue(52.000, 60.000, "It can be a place\nthat does not surveil,\nbut connects.")
   ],
 
-  // 07:10 → 08:00 — CREDITS ONLY
+  // 07:00 → 08:00 — CREDITS ONLY
   scene06: [
-    cue(5.000, 13.000, "ELISA"),
-    cue(18.000, 30.000, "an audiovisual performance\nby BLIVET"),
-    cue(35.000, 48.000, "Benedetta Marino\nBeatrice Resta\nMicol Gelsi")
+    cue(1.000, 8.500, "A memory\nthat does not capture,\nbut returns."),
+    cue(10.000, 20.700, "A network\nthat does not separate,\nbut lets things pass."),
+    cue(25.000, 30.000, "ELISA"),
+    cue(32.000, 42.000, "an audiovisual tale\nby BLIVET"),
+    cue(50.000, 58.000, "Benedetta Marino\nBeatrice Resta\nMicol Gelsi")
   ]
 };
