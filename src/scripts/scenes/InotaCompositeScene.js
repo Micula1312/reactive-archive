@@ -163,6 +163,11 @@ export default class InotaCompositeScene {
     this.video.removeAttribute("style");
   }
 
+  stopAndHideVideo() {
+    this.video.pause();
+    this.video.style.visibility = "hidden";
+  }
+
   async enter() {
     const output = this.scene.output;
     if (!output?.ceiling || !output?.screen) {
@@ -328,9 +333,10 @@ export default class InotaCompositeScene {
       }
 
       const active = timelineClips[this.activeTimelineClipIndex];
-      if (active && this.hasNumber(active.out) && this.video.currentTime >= Number(active.out)) {
-        this.video.pause();
-        this.video.style.visibility = "hidden";
+      if (active) {
+        const reachedSceneEnd = this.hasNumber(active.end) && elapsed >= Number(active.end);
+        const reachedClipOut = this.hasNumber(active.out) && this.video.currentTime >= Number(active.out);
+        if (reachedSceneEnd || reachedClipOut) this.stopAndHideVideo();
       }
     }
 
@@ -349,13 +355,10 @@ export default class InotaCompositeScene {
 
     const activeCueIndex = Math.max(...Array.from(this.triggeredCueClips), -1);
     const activeCue = activeCueIndex >= 0 ? cueClips[activeCueIndex] : null;
-    if (
-      activeCue &&
-      this.hasNumber(activeCue.out) &&
-      this.video.currentTime >= Number(activeCue.out)
-    ) {
-      this.video.pause();
-      this.video.style.visibility = "hidden";
+    if (activeCue) {
+      const cueReachedSceneEnd = this.hasNumber(activeCue.end) && elapsed >= Number(activeCue.end);
+      const cueReachedOut = this.hasNumber(activeCue.out) && this.video.currentTime >= Number(activeCue.out);
+      if (cueReachedSceneEnd || cueReachedOut) this.stopAndHideVideo();
     }
 
     const level = Math.max(0, Math.min(1, Number(audioData.level) || 0));
@@ -393,9 +396,7 @@ export default class InotaCompositeScene {
       if (this.flashLevel < 0.006) this.flashLevel = 0;
     }
 
-    if (this.flashLayer) {
-      this.flashLayer.style.opacity = String(this.flashLevel);
-    }
+    if (this.flashLayer) this.flashLayer.style.opacity = String(this.flashLevel);
 
     const whiteTransientThreshold = Number(this.scene.whiteTransientThreshold ?? 0.055);
     const whiteHighFloor = Number(this.scene.whiteHighFloor ?? 0.42);
@@ -410,9 +411,7 @@ export default class InotaCompositeScene {
       if (this.whiteFlashLevel < 0.006) this.whiteFlashLevel = 0;
     }
 
-    if (this.whiteFlashLayer) {
-      this.whiteFlashLayer.style.opacity = String(this.whiteFlashLevel);
-    }
+    if (this.whiteFlashLayer) this.whiteFlashLayer.style.opacity = String(this.whiteFlashLevel);
   }
 
   async exit() {
