@@ -6,6 +6,7 @@ export default class InotaCompositeScene {
     this.videoHome = video.parentElement;
     this.layer = null;
     this.frame = null;
+    this.videoFrame = null;
     this.flashLayer = null;
     this.whiteFlashLayer = null;
     this.ceilingReactiveLayer = null;
@@ -70,7 +71,6 @@ export default class InotaCompositeScene {
     if (!src) return;
 
     const requestId = ++this.playRequestId;
-
     this.video.pause();
     this.video.src = src;
     this.video.loop = loop;
@@ -134,32 +134,49 @@ export default class InotaCompositeScene {
   }
 
   mountNativeVideo(frame) {
-    frame.append(this.video);
-    Object.assign(this.video.style, {
-      display: "block",
+    const videoFrame = document.createElement("div");
+    videoFrame.dataset.inotaScreen = "video-frame";
+    Object.assign(videoFrame.style, {
       position: "absolute",
       left: "23.333333%",
       top: "50%",
       width: "53.333333%",
       height: "50%",
+      overflow: "hidden",
+      zIndex: "2",
+      background: "#000",
+      pointerEvents: "none"
+    });
+
+    videoFrame.append(this.video);
+    Object.assign(this.video.style, {
+      display: "block",
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
       objectFit: "cover",
       objectPosition: "center center",
       visibility: "visible",
       opacity: "1",
-      zIndex: "2",
       pointerEvents: "none",
       background: "#000",
       transformOrigin: "center center",
       willChange: "transform"
     });
+
     this.video.muted = true;
     this.video.playsInline = true;
+    frame.append(videoFrame);
+    this.videoFrame = videoFrame;
   }
 
   restoreNativeVideo() {
     this.video.pause();
     if (this.videoHome) this.videoHome.append(this.video);
     this.video.removeAttribute("style");
+    this.videoFrame?.remove();
+    this.videoFrame = null;
   }
 
   async enter() {
@@ -347,32 +364,22 @@ export default class InotaCompositeScene {
 
     const activeCueIndex = Math.max(...Array.from(this.triggeredCueClips), -1);
     const activeCue = activeCueIndex >= 0 ? cueClips[activeCueIndex] : null;
-    if (
-      activeCue &&
-      this.hasNumber(activeCue.out) &&
-      this.video.currentTime >= Number(activeCue.out)
-    ) {
+    if (activeCue && this.hasNumber(activeCue.out) && this.video.currentTime >= Number(activeCue.out)) {
       this.video.pause();
     }
 
     const level = Math.max(0, Math.min(1, Number(audioData.level) || 0));
     const bass = Math.max(0, Math.min(1, Number(audioData.bass) || 0));
-    const mid = Math.max(0, Math.min(1, Number(audioData.mid) || 0));
     const high = Math.max(0, Math.min(1, Number(audioData.high) || 0));
     const highTransient = Math.max(0, high - this.previousHigh);
     this.previousHigh = high;
 
-    // Stronger but still compositor-only movement on the native video.
-    const scaleAmount = Number(this.scene.videoBassScale ?? 0.05);
+    // Keep only a centered bass pulse. The screen wrapper clips it strictly to
+    // the 1920x1200 screen, so it can never bleed into the ceiling.
+    const scaleAmount = Number(this.scene.videoBassScale ?? 0.035);
     const videoScale = 1 + bass * scaleAmount;
-    const jitterAmount = Number(this.scene.videoHighJitter ?? 7);
-    const jitter = highTransient > 0.045
-      ? (Math.sin(performance.now() * 0.095) * jitterAmount * Math.min(1, highTransient * 10))
-      : 0;
-    const yJitter = mid > 0.6 ? Math.sin(performance.now() * 0.06) * 2.5 * mid : 0;
-    this.video.style.transform = `translate(${jitter.toFixed(2)}px, ${yJitter.toFixed(2)}px) scale(${videoScale.toFixed(4)})`;
+    this.video.style.transform = `scale(${videoScale.toFixed(4)})`;
 
-    // Ceiling red: much more present, driven by highs and overall level.
     if (this.ceilingReactiveLayer) {
       const ceilingThreshold = Number(this.scene.ceilingHighThreshold ?? 0.34);
       const ceilingOpacity = high > ceilingThreshold
@@ -381,7 +388,6 @@ export default class InotaCompositeScene {
       this.ceilingReactiveLayer.style.opacity = String(ceilingOpacity);
     }
 
-    // Screen red wash: intentionally strong on bells/highs.
     if (this.screenReactiveLayer) {
       const screenThreshold = Number(this.scene.screenHighThreshold ?? 0.42);
       const screenOpacity = high > screenThreshold
@@ -390,7 +396,6 @@ export default class InotaCompositeScene {
       this.screenReactiveLayer.style.opacity = String(screenOpacity);
     }
 
-    // Whole-master RED blast on strong high-frequency energy.
     const threshold = Number(this.scene.highFlashThreshold ?? 0.46);
     const maxOpacity = Number(this.scene.highFlashMaxOpacity ?? 0.96);
     const decay = Number(this.scene.highFlashDecay ?? 0.68);
@@ -403,12 +408,8 @@ export default class InotaCompositeScene {
       if (this.flashLevel < 0.006) this.flashLevel = 0;
     }
 
-    if (this.flashLayer) {
-      this.flashLayer.style.opacity = String(this.flashLevel);
-    }
+    if (this.flashLayer) this.flashLayer.style.opacity = String(this.flashLevel);
 
-    // WHITE transient strobe: reacts to sudden high-frequency attacks rather than
-    // sustained highs, so bells/percussive hits cut through as sharp white frames.
     const whiteTransientThreshold = Number(this.scene.whiteTransientThreshold ?? 0.055);
     const whiteHighFloor = Number(this.scene.whiteHighFloor ?? 0.42);
     const whiteMaxOpacity = Number(this.scene.whiteFlashMaxOpacity ?? 0.98);
@@ -422,9 +423,7 @@ export default class InotaCompositeScene {
       if (this.whiteFlashLevel < 0.006) this.whiteFlashLevel = 0;
     }
 
-    if (this.whiteFlashLayer) {
-      this.whiteFlashLayer.style.opacity = String(this.whiteFlashLevel);
-    }
+    if (this.whiteFlashLayer) this.whiteFlashLayer.style.opacity = String(this.whiteFlashLevel);
   }
 
   async exit() {
