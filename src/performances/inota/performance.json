@@ -23,102 +23,60 @@
   "subtitleTypingSpeed": 70,
   "scenes": [
     {
-      "id": "scene-01",
-      "order": 1,
-      "start": "00:00",
-      "title": "SCENE 01 — BLACK / INTRO",
-      "type": "inota-composite",
-      "dialogue": "scene01",
-      "ceilingColor": "#000000",
-      "ceilingTextColor": "#ffffff",
-      "reactivity": 0,
+      "id": "scene-01", "order": 1, "start": "00:00", "title": "SCENE 01 — BLACK / INTRO", "type": "inota-composite", "dialogue": "scene01",
+      "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
+      "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/03-Loader.mp4", "start": 0, "in": 0, "out": null },
         { "src": "/inota/videos/Video-01.mp4", "start": 35, "in": 0, "out": null },
         { "src": "/inota/videos/08-Rotazione.mp4", "start": 58, "in": 0, "out": null }
-      ],
-      "filter": {}
+      ], "filter": {}
     },
     {
-      "id": "scene-02",
-      "order": 2,
-      "start": "01:20",
-      "title": "SCENE 02 — PHOTO",
-      "type": "inota-composite",
-      "dialogue": "scene02",
-      "ceilingColor": "#000000",
-      "ceilingTextColor": "#ffffff",
-      "reactivity": 0,
+      "id": "scene-02", "order": 2, "start": "01:20", "title": "SCENE 02 — PHOTO", "type": "inota-composite", "dialogue": "scene02",
+      "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
+      "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/06-Foto.mp4", "start": 0, "in": 0, "out": null },
         { "src": "/inota/videos/06-Foto-2.mp4", "start": 28, "in": 0, "out": null },
         { "src": "/inota/videos/04-Video-Verticale.mp4", "start": 60, "in": 0, "out": null }
-      ],
-      "filter": {}
+      ], "filter": {}
     },
     {
-      "id": "scene-03",
-      "order": 3,
-      "start": "03:00",
-      "title": "SCENE 03 — 3D TOUCH",
-      "type": "inota-composite",
-      "dialogue": "scene03",
-      "ceilingColor": "#000000",
-      "ceilingTextColor": "#ffffff",
-      "reactivity": 0,
+      "id": "scene-03", "order": 3, "start": "03:00", "title": "SCENE 03 — 3D TOUCH", "type": "inota-composite", "dialogue": "scene03",
+      "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
+      "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/07-3D-Touch.mp4", "start": 0, "in": 0, "out": null },
         { "src": "/inota/videos/12-Archivio-3D.mp4", "start": 40, "in": 0, "out": null }
-      ],
-      "filter": {}
+      ], "filter": {}
     },
     {
-      "id": "scene-04",
-      "order": 4,
-      "start": "04:20",
-      "title": "SCENE 04 — FORESTE",
-      "type": "inota-composite",
-      "dialogue": "scene04",
-      "ceilingColor": "#000000",
-      "ceilingTextColor": "#ffffff",
-      "reactivity": 0,
+      "id": "scene-04", "order": 4, "start": "04:20", "title": "SCENE 04 — FORESTE", "type": "inota-composite", "dialogue": "scene04",
+      "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
+      "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/11-Foresta-Immagini.mp4", "start": 0, "in": 0, "out": null },
         { "src": "/inota/videos/10-Foresta-Numeri.mp4", "start": 45, "in": 0, "out": null, "loop": true }
-      ],
-      "filter": {}
+      ], "filter": {}
     },
     {
-      "id": "scene-05",
-      "order": 5,
-      "start": "06:00",
-      "title": "SCENE 05 — FACE + CACOPHONY",
-      "type": "inota-composite",
-      "dialogue": "scene05",
-      "ceilingColor": "#000000",
-      "ceilingTextColor": "#ffffff",
-      "reactivity": 0,
+      "id": "scene-05", "order": 5, "start": "06:00", "title": "SCENE 05 — FACE + CACOPHONY", "type": "inota-composite", "dialogue": "scene05",
+      "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
+      "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/15-Volto-Corpi.mp4", "start": 0, "in": 0, "out": null },
         { "src": "/inota/videos/16-Cacofonia.mp4", "start": 40, "in": 0, "out": null }
-      ],
-      "filter": {}
+      ], "filter": {}
     },
     {
-      "id": "scene-06",
-      "order": 6,
-      "start": "07:00",
-      "title": "SCENE 06 — TREE + BLIVET / CREDITS",
-      "type": "inota-composite",
-      "dialogue": "scene06",
-      "ceilingColor": "#000000",
-      "ceilingTextColor": "#ffffff",
-      "reactivity": 0,
+      "id": "scene-06", "order": 6, "start": "07:00", "title": "SCENE 06 — TREE + BLIVET / CREDITS", "type": "inota-composite", "dialogue": "scene06",
+      "ceilingColor": "#000000", "ceilingTextColor": "#ffffff", "reactivity": 0,
+      "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/17-Ex-Albero.mp4", "start": 0, "in": 5, "out": null },
         { "src": "/inota/videos/20-Blivet.mp4", "start": 50, "in": 0, "out": null, "loop": true }
-      ],
-      "filter": {}
+      ], "filter": {}
     }
   ]
 }
