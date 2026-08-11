@@ -113,6 +113,14 @@ function setBlackout(active) {
   ui.setStatus(blackoutActive ? "BLACKOUT" : `Scena ${sceneManager.currentIndex + 1}`);
 }
 
+function setSubtitlePosition(mode) {
+  const next = mode === "screen" || mode === "ceiling"
+    ? subtitleManager.setPositionMode(mode)
+    : subtitleManager.togglePositionMode();
+  ui.setStatus(next === "screen" ? "Testi sul video" : "Testi sul ceiling");
+  return next;
+}
+
 function configurePlaybackMode() {
   if (timeline) {
     audioFileSyncEnabled = !soloMicEnabled;
@@ -209,6 +217,8 @@ const performanceMonitor = new PerformanceMonitor({
   audioManager,
   onBlackout: setBlackout,
   onSoloMic: setSoloMic,
+  onSubtitlePosition: setSubtitlePosition,
+  getSubtitlePosition: () => subtitleManager.getPositionMode(),
   getSoloMic: () => soloMicEnabled,
   getAudioFileSync: () => audioFileSyncEnabled
 });
@@ -330,8 +340,6 @@ function wait(ms) {
 async function runInotaSyncPreroll() {
   if (performanceName !== "inota") return;
 
-  // Technical slate recorded by OBS BEFORE master time 00:00.
-  // The first clean frame after it disappears is the exact cut point.
   const marker = document.createElement("div");
   marker.dataset.inotaSyncMarker = "true";
   Object.assign(marker.style, {
@@ -344,9 +352,6 @@ async function runInotaSyncPreroll() {
   document.body.append(marker);
   await wait(1000);
   marker.remove();
-
-  // Give the browser one complete 30 fps frame to present the clean master
-  // before the audio clock is started.
   await wait(34);
 }
 
@@ -367,8 +372,6 @@ async function startExperience() {
 
     configurePlaybackMode();
 
-    // INOTA final capture: prepare scene 0 while the timeline is still stopped,
-    // show a 1 s magenta sync slate, then start master time at the clean cut.
     if (timeline && performanceName === "inota") {
       started = false;
       sceneManager.setStarted(false);
@@ -444,9 +447,15 @@ async function toggleMicrophoneMode() {
 }
 
 window.addEventListener("keydown", (event) => {
-  if (event.key.toLowerCase() !== "s") return;
-  const enabled = subtitleManager.toggle();
-  ui.setStatus(enabled ? "Sottotitoli attivi" : "Sottotitoli disattivati");
+  const key = event.key.toLowerCase();
+  if (key === "s") {
+    const enabled = subtitleManager.toggle();
+    ui.setStatus(enabled ? "Sottotitoli attivi" : "Sottotitoli disattivati");
+  }
+  if (key === "t") {
+    setSubtitlePosition();
+    performanceMonitor.publish({ level: 0, bass: 0, mid: 0, high: 0 }, true);
+  }
 });
 
 ui.onStart(startExperience);
