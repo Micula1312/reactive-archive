@@ -10,7 +10,9 @@ export default class SubtitleManager {
     this.pendingShowTimer = null;
     this.typingTimer = null;
     this.lastToggleAt = 0;
-    this.positionMode = this.isInota() ? "screen" : "ceiling";
+    // Keep the historical/default position on the ceiling.
+    // Pressing T (or the regia control) moves it to the projection screen.
+    this.positionMode = "ceiling";
 
     this.injectStyles();
     this.element = this.createLayer();
@@ -47,7 +49,7 @@ export default class SubtitleManager {
       }
 
       #performance-subtitles[data-inota="true"] {
-        font-size: clamp(14px, 1.05vw, 30px);
+        font-size: clamp(12px, .82vw, 24px);
       }
 
       #performance-subtitles.is-visible {
@@ -59,7 +61,7 @@ export default class SubtitleManager {
       #performance-subtitles .subtitle-window {
         display: inline-block;
         max-width: 100%;
-        padding: 8px 16px;
+        padding: 6px 12px;
         border: 0;
         background: transparent;
         box-shadow: none;
@@ -67,15 +69,15 @@ export default class SubtitleManager {
       }
 
       #performance-subtitles[data-inota="true"][data-position="screen"] .subtitle-window {
-        max-width: 88%;
-        padding: 8px 14px 10px;
+        max-width: 86%;
+        padding: 6px 12px 8px;
         background: rgb(0 0 0 / 58%);
       }
 
       #performance-subtitles .subtitle-speaker {
         display: block;
-        margin: 0 0 .6em;
-        font-size: .58em;
+        margin: 0 0 .5em;
+        font-size: .56em;
         font-weight: 500;
         letter-spacing: .14em;
         line-height: 1;
@@ -148,8 +150,7 @@ export default class SubtitleManager {
     const frame = this.getInotaFrame();
     if (!frame) return;
 
-    // INOTA: subtitle layer is simply absolute INSIDE the 3600x2400 frame.
-    // Projection screen = x 840..2760 and y 1200..2400.
+    // Subtitle layer is absolutely positioned INSIDE the same relative 3600x2400 frame.
     if (this.element.parentElement !== frame) frame.appendChild(this.element);
 
     Object.assign(this.element.style, {
@@ -165,13 +166,13 @@ export default class SubtitleManager {
     });
 
     if (this.positionMode === "screen") {
-      // SCREEN: exact 1920px region, 840px from the left, starts at y=1200.
-      // Text sits near the TOP-CENTRE of that screen.
+      // Projection screen: x=840..2760, y=1200..2400 in the 3600x2400 master.
+      // Put the subtitle box at the TOP-CENTRE of that exact rectangle.
       this.element.style.left = "23.333333%";
-      this.element.style.top = "52.5%";
+      this.element.style.top = "53%";
       this.element.style.width = "53.333333%";
     } else {
-      // CEILING fallback: centred in upper 3600x1200 region.
+      // Ceiling: full-width upper half.
       this.element.style.left = "0";
       this.element.style.top = "15%";
       this.element.style.width = "100%";
