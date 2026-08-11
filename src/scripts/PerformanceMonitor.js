@@ -5,6 +5,8 @@ export default class PerformanceMonitor {
     audioManager,
     onBlackout,
     onSoloMic,
+    onSubtitlePosition,
+    getSubtitlePosition = () => "ceiling",
     getSoloMic = () => false,
     getAudioFileSync = () => false
   }) {
@@ -13,6 +15,8 @@ export default class PerformanceMonitor {
     this.audioManager = audioManager;
     this.onBlackout = onBlackout;
     this.onSoloMic = onSoloMic;
+    this.onSubtitlePosition = onSubtitlePosition;
+    this.getSubtitlePosition = getSubtitlePosition;
     this.getSoloMic = getSoloMic;
     this.getAudioFileSync = getAudioFileSync;
     this.channel = new BroadcastChannel("reactive-archive-monitor");
@@ -60,6 +64,9 @@ export default class PerformanceMonitor {
             break;
           case "solo-mic":
             await this.onSoloMic?.(Boolean(message.active));
+            break;
+          case "subtitle-position":
+            this.onSubtitlePosition?.(message.mode);
             break;
           case "blackout":
             this.onBlackout?.(Boolean(message.active));
@@ -165,6 +172,7 @@ export default class PerformanceMonitor {
       audioMuted: this.audioMuted,
       soloMicEnabled: Boolean(this.getSoloMic()),
       audioFileSyncEnabled: Boolean(this.getAudioFileSync()),
+      subtitlePosition: this.getSubtitlePosition(),
       paused: this.sceneManager.isPaused,
       timelineTime: this.hasTimeline() ? this.audioManager.cueAudio.currentTime : null,
       scene: {

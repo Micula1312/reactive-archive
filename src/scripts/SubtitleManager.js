@@ -12,9 +12,11 @@ export default class SubtitleManager {
     this.pendingShowTimer = null;
     this.typingTimer = null;
     this.lastToggleAt = 0;
+    this.positionMode = "ceiling";
 
     this.injectStyles();
     this.element = this.createLayer();
+    this.applyPositionMode();
 
     window.__reactiveArchiveSubtitleManager = this;
   }
@@ -43,6 +45,22 @@ export default class SubtitleManager {
         letter-spacing: 0;
         white-space: pre-line;
         text-align: left;
+      }
+
+      #performance-subtitles[data-position="screen"] {
+        top: calc(50% + clamp(18px, 2.2vh, 34px));
+        left: 50%;
+        width: min(48vw, 860px);
+        transform: translateX(-50%);
+        text-align: center;
+      }
+
+      #performance-subtitles[data-position="screen"] .subtitle-window {
+        display: inline-block;
+        max-width: 100%;
+        padding: 10px 14px 12px;
+        background: rgb(0 0 0 / 72%);
+        text-align: center;
       }
 
       #performance-subtitles.is-visible {
@@ -102,6 +120,13 @@ export default class SubtitleManager {
           font-size: clamp(14px, 3.7vw, 17px);
         }
 
+        #performance-subtitles[data-position="screen"] {
+          top: calc(50% + 18px);
+          left: 50%;
+          width: min(72vw, 620px);
+          transform: translateX(-50%);
+        }
+
         #performance-subtitles .subtitle-window {
           padding: 10px 12px 11px;
         }
@@ -133,6 +158,25 @@ export default class SubtitleManager {
     `;
     document.body.appendChild(layer);
     return layer;
+  }
+
+  applyPositionMode() {
+    if (!this.element) return;
+    this.element.dataset.position = this.positionMode;
+  }
+
+  setPositionMode(mode) {
+    this.positionMode = mode === "screen" ? "screen" : "ceiling";
+    this.applyPositionMode();
+    return this.positionMode;
+  }
+
+  togglePositionMode() {
+    return this.setPositionMode(this.positionMode === "ceiling" ? "screen" : "ceiling");
+  }
+
+  getPositionMode() {
+    return this.positionMode;
   }
 
   setScene(scene) {
