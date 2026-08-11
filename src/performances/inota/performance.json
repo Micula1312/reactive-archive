@@ -57,7 +57,7 @@
       "ceilingHighThreshold": 0.42, "screenHighThreshold": 0.48, "highFlashThreshold": 0.58, "highFlashMaxOpacity": 0.92, "highFlashDecay": 0.68, "highFlashColor": "#ff0000",
       "clips": [
         { "src": "/inota/videos/11-Foresta-Immagini.mp4", "start": 3, "in": 0, "out": null },
-        { "src": "/inota/videos/10-Foresta-Numeri.mp4", "start": 48, "in": 0, "end": 92 }
+        { "src": "/inota/videos/10-Foresta-Numeri.mp4", "start": 48, "in": 0, "end": 90 }
       ], "filter": {}
     },
     {
