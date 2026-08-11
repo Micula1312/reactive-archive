@@ -12,7 +12,7 @@ export default class SubtitleManager {
     if (document.querySelector("#performance-subtitle-styles")) return;
     const style = document.createElement("style"); style.id = "performance-subtitle-styles";
     style.textContent = `
-#performance-subtitles{position:fixed;z-index:1000002;pointer-events:none;opacity:0;visibility:hidden;transition:opacity 240ms ease,visibility 0s linear 240ms;color:rgba(255,255,255,.98);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:clamp(14px,1vw,19px);font-weight:400;line-height:1.35;white-space:pre-line;text-align:center}
+#performance-subtitles{position:fixed;z-index:10;pointer-events:none;opacity:0;visibility:hidden;transition:opacity 240ms ease,visibility 0s linear 240ms;color:rgba(255,255,255,.98);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:clamp(14px,1vw,19px);font-weight:400;line-height:1.35;white-space:pre-line;text-align:center}
 #performance-subtitles[data-inota="true"]{font-size:clamp(18px,1.45vw,46px)}
 #performance-subtitles.is-visible{opacity:1;visibility:visible;transition-delay:0s}
 #performance-subtitles .subtitle-window{display:inline-block;max-width:100%;padding:8px 16px;border:0;background:transparent;box-shadow:none;text-align:center}
@@ -32,28 +32,46 @@ export default class SubtitleManager {
     layer.innerHTML = `<span class="subtitle-window"><span class="subtitle-speaker"></span><span class="subtitle-text"></span></span>`;
     document.body.appendChild(layer); return layer;
   }
+  getInotaFrame() {
+    const layer = document.querySelector('[data-scene-layer="inota-composite"]');
+    const frame = layer?.firstElementChild;
+    return frame instanceof HTMLElement ? frame : null;
+  }
   applyPositionMode() { if (!this.element) return; this.element.dataset.position=this.positionMode; this.element.dataset.inota=this.isInota()?"true":"false"; this.syncPositionGeometry(); }
   syncPositionGeometry() {
-    if (!this.element || !this.isInota()) return;
-    // The source video is display:none in INOTA, so it has no usable geometry.
-    // The visible 3600x2400 output is the canvas. Position subtitles from that canvas.
-    const canvas = document.querySelector("#visual-canvas");
-    if (!(canvas instanceof HTMLCanvasElement)) return;
-    const r = canvas.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return;
-    const sx = r.width / 3600; const sy = r.height / 2400;
-    const screenLeft = r.left + 840 * sx;
-    const screenTop = r.top + 1200 * sy;
-    const screenWidth = 1920 * sx;
-    const screenHeight = 1200 * sy;
-    this.element.style.transform = "translateX(-50%)";
+    if (!this.element) return;
+    if (!this.isInota()) {
+      if (!this.element.isConnected) document.body.appendChild(this.element);
+      return;
+    }
+
+    const frame = this.getInotaFrame();
+    if (!frame) {
+      if (!this.element.isConnected || this.element.parentElement !== document.body) document.body.appendChild(this.element);
+      return;
+    }
+
+    // New system: subtitles live INSIDE the exact same 3600x2400 composite frame
+    // as ceiling and screen. No viewport/canvas coordinate conversion at all.
+    if (this.element.parentElement !== frame) frame.appendChild(this.element);
+
+    Object.assign(this.element.style, {
+      position: "absolute",
+      transform: "translateX(-50%)",
+      margin: "0"
+    });
+
     if (this.positionMode === "screen") {
-      this.element.style.left = `${screenLeft + screenWidth / 2}px`;
-      this.element.style.top = `${screenTop + 55 * sy}px`;
-      this.element.style.width = `${screenWidth * 0.90}px`;
+      // Screen projection is x 23.333..% → 76.666..%, y 50% → 100%.
+      // Put text at its top-centre, safely BELOW the ceiling boundary.
+      this.element.style.left = "50%";
+      this.element.style.top = "53%";
+      this.element.style.width = "48%";
     } else {
-      this.element.style.left = `${r.left + r.width / 2}px`;
-      this.element.style.top = `${r.top + 400 * sy}px`;
-      this.element.style.width = `${r.width * 0.88}px`;
+      // Ceiling is the complete upper half of the same frame.
+      this.element.style.left = "50%";
+      this.element.style.top = "17%";
+      this.element.style.width = "88%";
     }
   }
   setPositionMode(mode){this.positionMode=mode==="screen"?"screen":"ceiling";this.applyPositionMode();return this.positionMode}
