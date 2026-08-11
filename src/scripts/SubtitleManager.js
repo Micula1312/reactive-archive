@@ -21,6 +21,13 @@ export default class SubtitleManager {
     window.__reactiveArchiveSubtitleManager = this;
   }
 
+  isInota() {
+    return (
+      document.documentElement.dataset.performance === "inota" ||
+      document.body.dataset.performance === "inota"
+    );
+  }
+
   injectStyles() {
     if (document.querySelector("#performance-subtitle-styles")) return;
 
@@ -47,20 +54,22 @@ export default class SubtitleManager {
         text-align: left;
       }
 
-      #performance-subtitles[data-position="screen"] {
-        top: calc(50% + clamp(18px, 2.2vh, 34px));
-        left: 50%;
-        width: min(48vw, 860px);
-        transform: translateX(-50%);
+      #performance-subtitles[data-inota="true"] {
+        width: min(86vw, 3100px);
+        font-size: clamp(18px, 1.45vw, 46px);
         text-align: center;
       }
 
-      #performance-subtitles[data-position="screen"] .subtitle-window {
-        display: inline-block;
+      #performance-subtitles[data-inota="true"] .subtitle-window {
         max-width: 100%;
-        padding: 10px 14px 12px;
-        background: rgb(0 0 0 / 72%);
+        background: transparent;
+        padding: 8px 16px;
         text-align: center;
+      }
+
+      #performance-subtitles[data-inota="true"][data-position="screen"] .subtitle-window {
+        background: rgb(0 0 0 / 72%);
+        padding: 10px 18px 12px;
       }
 
       #performance-subtitles.is-visible {
@@ -113,18 +122,11 @@ export default class SubtitleManager {
       }
 
       @media (max-width: 900px) {
-        #performance-subtitles {
+        #performance-subtitles:not([data-inota="true"]) {
           top: max(24px, env(safe-area-inset-top));
           left: max(20px, env(safe-area-inset-left));
           width: min(78vw, 440px);
           font-size: clamp(14px, 3.7vw, 17px);
-        }
-
-        #performance-subtitles[data-position="screen"] {
-          top: calc(50% + 18px);
-          left: 50%;
-          width: min(72vw, 620px);
-          transform: translateX(-50%);
         }
 
         #performance-subtitles .subtitle-window {
@@ -163,6 +165,35 @@ export default class SubtitleManager {
   applyPositionMode() {
     if (!this.element) return;
     this.element.dataset.position = this.positionMode;
+    this.element.dataset.inota = this.isInota() ? "true" : "false";
+    this.syncPositionGeometry();
+  }
+
+  syncPositionGeometry() {
+    if (!this.element || !this.isInota()) return;
+
+    const video = document.querySelector("#source-video");
+    if (!(video instanceof HTMLVideoElement)) return;
+
+    const rect = video.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2) return;
+
+    const frameWidth = rect.width / 0.53333333;
+    const frameLeft = rect.left - frameWidth * 0.23333333;
+    const frameCenterX = frameLeft + frameWidth / 2;
+
+    this.element.style.left = `${frameCenterX}px`;
+    this.element.style.transform = "translateX(-50%)";
+
+    if (this.positionMode === "screen") {
+      this.element.style.top = `${rect.top + Math.max(18, rect.height * 0.055)}px`;
+      this.element.style.width = `${Math.min(rect.width * 0.9, 1500)}px`;
+      return;
+    }
+
+    const ceilingTop = rect.top - rect.height;
+    this.element.style.top = `${ceilingTop + rect.height * 0.34}px`;
+    this.element.style.width = `${Math.min(frameWidth * 0.88, 3100)}px`;
   }
 
   setPositionMode(mode) {
@@ -187,6 +218,7 @@ export default class SubtitleManager {
     this.currentCueIndex = -1;
     this.sceneStartedAt = performance.now();
     this.clear();
+    this.syncPositionGeometry();
   }
 
   normalizeCues(scene) {
@@ -229,6 +261,8 @@ export default class SubtitleManager {
   }
 
   update() {
+    this.syncPositionGeometry();
+
     if (!this.enabled || !this.scene || !this.cues.length) {
       this.clear();
       return;
