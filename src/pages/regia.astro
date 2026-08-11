@@ -39,13 +39,13 @@
       .control output { font-variant-numeric: tabular-nums; text-align: right; font-size: 12px; opacity: .7; }
       .control input[type="range"] { width: 100%; accent-color: #fff; }
       .controls-empty { opacity: .45; font-size: 13px; }
-      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(8, minmax(82px, 1fr)); gap: 10px; }
+      footer { padding: 14px; border-top: 1px solid #333; display: grid; grid-template-columns: repeat(9, minmax(82px, 1fr)); gap: 10px; }
       footer button { min-height: 58px; border: 1px solid #555; background: #111; color: #fff; cursor: pointer; }
       footer button:hover { background: #222; }
       footer .go { background: #f5f5f5; color: #080808; font-weight: 700; }
       footer .blackout.active { background: #a00; border-color: #f44; }
       footer .toggle.active { background: #f5f5f5; color: #080808; border-color: #fff; }
-      @media (max-width: 1000px) { footer { grid-template-columns: repeat(4, 1fr); } }
+      @media (max-width: 1000px) { footer { grid-template-columns: repeat(5, 1fr); } }
       @media (max-width: 760px) { main { grid-template-columns: 1fr; } .cue-list { max-height: 34vh; border-right: 0; border-bottom: 1px solid #333; } .control { grid-template-columns: 100px 1fr 48px; } footer { grid-template-columns: repeat(2, 1fr); } }
     </style>
   </head>
@@ -89,6 +89,7 @@
         <button id="pause-button" class="toggle">Ⅱ PAUSA</button>
         <button class="go" data-command="go">GO ▶</button>
         <button data-command="next">NEXT ▶</button>
+        <button id="subtitle-position-button" class="toggle">TESTI: CEILING</button>
         <button id="solo-mic-button" class="toggle">SOLO MIC OFF</button>
         <button id="mute-button" class="toggle">🔊 AUDIO</button>
         <button id="blackout-button" class="blackout">BLACKOUT</button>
@@ -108,12 +109,14 @@
       const muteButton = document.querySelector("#mute-button");
       const pauseButton = document.querySelector("#pause-button");
       const soloMicButton = document.querySelector("#solo-mic-button");
+      const subtitlePositionButton = document.querySelector("#subtitle-position-button");
 
       let blackout = false;
       let muted = false;
       let paused = false;
       let soloMicEnabled = false;
       let audioFileSyncEnabled = false;
+      let subtitlePosition = "ceiling";
       let lastStateAt = 0;
       let scenes = [];
       let activeSceneId = null;
@@ -218,6 +221,9 @@
         pauseButton.textContent = paused ? "▶ RIPRENDI" : "Ⅱ PAUSA";
         soloMicButton.classList.toggle("active", soloMicEnabled);
         soloMicButton.textContent = soloMicEnabled ? "SOLO MIC ON" : "SOLO MIC OFF";
+        subtitlePositionButton.classList.toggle("active", subtitlePosition === "screen");
+        subtitlePositionButton.textContent = subtitlePosition === "screen" ? "TESTI: VIDEO" : "TESTI: CEILING";
+        subtitlePositionButton.title = "T — sposta i testi tra ceiling e parte alta del video";
         soloMicButton.title = soloMicEnabled
           ? "Solo il microfono alimenta gli effetti; i file audio sono esclusi"
           : audioFileSyncEnabled
@@ -242,6 +248,7 @@
         paused = Boolean(state.paused);
         soloMicEnabled = Boolean(state.soloMicEnabled);
         audioFileSyncEnabled = Boolean(state.audioFileSyncEnabled);
+        subtitlePosition = state.subtitlePosition === "screen" ? "screen" : "ceiling";
         renderToggleStates();
         renderCues(state.scene?.index ?? -1);
         renderControls(state.scene?.controls, state.scene?.id);
@@ -253,6 +260,12 @@
 
       document.querySelectorAll("[data-command]").forEach((button) => {
         button.addEventListener("click", () => send(button.dataset.command));
+      });
+
+      subtitlePositionButton.addEventListener("click", () => {
+        subtitlePosition = subtitlePosition === "ceiling" ? "screen" : "ceiling";
+        renderToggleStates();
+        send("subtitle-position", { mode: subtitlePosition });
       });
 
       soloMicButton.addEventListener("click", () => {
@@ -287,6 +300,7 @@
         if (event.key.toLowerCase() === "m") muteButton.click();
         if (event.key.toLowerCase() === "p") pauseButton.click();
         if (event.key.toLowerCase() === "i") soloMicButton.click();
+        if (event.key.toLowerCase() === "t") subtitlePositionButton.click();
       });
 
       setInterval(() => {
