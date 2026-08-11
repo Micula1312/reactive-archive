@@ -55,7 +55,6 @@ export default class SubtitleManager {
       }
 
       #performance-subtitles[data-inota="true"] {
-        width: min(86vw, 3100px);
         font-size: clamp(18px, 1.45vw, 46px);
         text-align: center;
       }
@@ -175,25 +174,36 @@ export default class SubtitleManager {
     const video = document.querySelector("#source-video");
     if (!(video instanceof HTMLVideoElement)) return;
 
-    const rect = video.getBoundingClientRect();
+    // INOTA mounts the native video directly inside the 3600x2400 master frame.
+    // Derive BOTH subtitle positions from that frame, never from the viewport.
+    const frame = video.parentElement;
+    if (!(frame instanceof HTMLElement)) return;
+
+    const rect = frame.getBoundingClientRect();
     if (rect.width < 2 || rect.height < 2) return;
 
-    const frameWidth = rect.width / 0.53333333;
-    const frameLeft = rect.left - frameWidth * 0.23333333;
-    const frameCenterX = frameLeft + frameWidth / 2;
+    // Master geometry:
+    // ceiling = x 0..3600, y 0..1200
+    // screen  = x 840..2760, y 1200..2400
+    const screenLeft = rect.left + rect.width * (840 / 3600);
+    const screenTop = rect.top + rect.height * 0.5;
+    const screenWidth = rect.width * (1920 / 3600);
+    const screenHeight = rect.height * 0.5;
 
-    this.element.style.left = `${frameCenterX}px`;
     this.element.style.transform = "translateX(-50%)";
 
     if (this.positionMode === "screen") {
-      this.element.style.top = `${rect.top + Math.max(18, rect.height * 0.055)}px`;
-      this.element.style.width = `${Math.min(rect.width * 0.9, 1500)}px`;
+      // TOP-CENTRE OF THE SCREEN PROJECTION, completely outside the ceiling.
+      this.element.style.left = `${screenLeft + screenWidth / 2}px`;
+      this.element.style.top = `${screenTop + Math.max(18, screenHeight * 0.06)}px`;
+      this.element.style.width = `${screenWidth * 0.9}px`;
       return;
     }
 
-    const ceilingTop = rect.top - rect.height;
-    this.element.style.top = `${ceilingTop + rect.height * 0.34}px`;
-    this.element.style.width = `${Math.min(frameWidth * 0.88, 3100)}px`;
+    // Ceiling mode: centred on the upper projection surface.
+    this.element.style.left = `${rect.left + rect.width / 2}px`;
+    this.element.style.top = `${rect.top + rect.height * 0.17}px`;
+    this.element.style.width = `${rect.width * 0.88}px`;
   }
 
   setPositionMode(mode) {
