@@ -36,12 +36,19 @@ export default function installInotaCeilingTextStyle() {
       top: 50% !important;
       left: 23.333333% !important;
       width: 53.333333% !important;
-      height: 50% !important;
+      height: auto !important;
       display: flex !important;
       align-items: flex-start !important;
       justify-content: center !important;
-      padding: 3.2% 2% 0 !important;
+      padding: 0 !important;
       font-size: clamp(16px, 1.05vw, 34px) !important;
+
+        -webkit-text-stroke: 1.5px #000;
+  paint-order: stroke fill;
+
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 5px rgba(0, 0, 0, 0.5);
     }
 
     body[data-performance="inota"] #performance-subtitles .subtitle-window {
@@ -61,9 +68,8 @@ export default function installInotaCeilingTextStyle() {
 
     body[data-performance="inota"] #performance-subtitles[data-position="screen"] .subtitle-window {
       width: 86% !important;
-      max-width: 86% !important;
-      background: rgb(0 0 0 / 58%) !important;
-      padding: 8px 14px 10px !important;
+      max-width: 100% !important;
+      padding: 0 !important;
     }
 
     body[data-performance="inota"] #performance-subtitles .subtitle-speaker {

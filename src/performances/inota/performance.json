@@ -39,7 +39,7 @@
       "clips": [
         { "src": "/inota/videos/06-Foto.mp4", "start": 0, "in": 0, "out": null },
         { "src": "/inota/videos/06-Foto-2.mp4", "start": 28, "in": 0, "out": null },
-        { "src": "/inota/videos/04-Video-Verticale.mp4", "start": 60, "in": 0, "out": null }
+        { "src": "/inota/videos/04-Video-Verticale.mp4", "start": 56, "in": 0, "out": null }
       ], "filter": {}
     },
     {
