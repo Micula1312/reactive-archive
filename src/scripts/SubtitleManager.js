@@ -7,15 +7,21 @@ export default class SubtitleManager {
     this.injectStyles(); this.element = this.createLayer(); this.applyPositionMode();
     window.__reactiveArchiveSubtitleManager = this;
   }
-  isInota() { return document.documentElement.dataset.performance === "inota" || document.body.dataset.performance === "inota"; }
+
+  isInota() {
+    return document.documentElement.dataset.performance === "inota" || document.body.dataset.performance === "inota";
+  }
+
   injectStyles() {
     if (document.querySelector("#performance-subtitle-styles")) return;
-    const style = document.createElement("style"); style.id = "performance-subtitle-styles";
+    const style = document.createElement("style");
+    style.id = "performance-subtitle-styles";
     style.textContent = `
 #performance-subtitles{position:fixed;z-index:10;pointer-events:none;opacity:0;visibility:hidden;transition:opacity 240ms ease,visibility 0s linear 240ms;color:rgba(255,255,255,.98);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:clamp(14px,1vw,19px);font-weight:400;line-height:1.35;white-space:pre-line;text-align:center}
-#performance-subtitles[data-inota="true"]{font-size:clamp(18px,1.45vw,46px)}
+#performance-subtitles[data-inota="true"]{font-size:clamp(18px,1.45vw,46px);display:flex;justify-content:center;align-items:flex-start;overflow:visible}
 #performance-subtitles.is-visible{opacity:1;visibility:visible;transition-delay:0s}
 #performance-subtitles .subtitle-window{display:inline-block;max-width:100%;padding:8px 16px;border:0;background:transparent;box-shadow:none;text-align:center}
+#performance-subtitles[data-inota="true"] .subtitle-window{width:auto;max-width:92%}
 #performance-subtitles[data-inota="true"][data-position="screen"] .subtitle-window{background:rgb(0 0 0 / 72%);padding:10px 18px 12px}
 #performance-subtitles .subtitle-speaker{display:block;margin:0 0 .7em;font-size:.62em;font-weight:500;letter-spacing:.14em;line-height:1;text-transform:uppercase;opacity:.7}
 #performance-subtitles .subtitle-speaker::before{content:"> "}
@@ -26,66 +32,188 @@ export default class SubtitleManager {
 `;
     document.head.appendChild(style);
   }
+
   createLayer() {
-    const existing = document.querySelector("#performance-subtitles"); if (existing instanceof HTMLElement) return existing;
-    const layer = document.createElement("div"); layer.id = "performance-subtitles"; layer.setAttribute("aria-live","polite"); layer.setAttribute("aria-atomic","true");
+    const existing = document.querySelector("#performance-subtitles");
+    if (existing instanceof HTMLElement) return existing;
+    const layer = document.createElement("div");
+    layer.id = "performance-subtitles";
+    layer.setAttribute("aria-live", "polite");
+    layer.setAttribute("aria-atomic", "true");
     layer.innerHTML = `<span class="subtitle-window"><span class="subtitle-speaker"></span><span class="subtitle-text"></span></span>`;
-    document.body.appendChild(layer); return layer;
+    document.body.appendChild(layer);
+    return layer;
   }
+
   getInotaFrame() {
     const layer = document.querySelector('[data-scene-layer="inota-composite"]');
     const frame = layer?.firstElementChild;
     return frame instanceof HTMLElement ? frame : null;
   }
-  applyPositionMode() { if (!this.element) return; this.element.dataset.position=this.positionMode; this.element.dataset.inota=this.isInota()?"true":"false"; this.syncPositionGeometry(); }
+
+  applyPositionMode() {
+    if (!this.element) return;
+    this.element.dataset.position = this.positionMode;
+    this.element.dataset.inota = this.isInota() ? "true" : "false";
+    this.syncPositionGeometry();
+  }
+
   syncPositionGeometry() {
     if (!this.element) return;
     if (!this.isInota()) {
-      if (!this.element.isConnected) document.body.appendChild(this.element);
+      if (this.element.parentElement !== document.body) document.body.appendChild(this.element);
       return;
     }
 
     const frame = this.getInotaFrame();
     if (!frame) {
-      if (!this.element.isConnected || this.element.parentElement !== document.body) document.body.appendChild(this.element);
+      if (this.element.parentElement !== document.body) document.body.appendChild(this.element);
       return;
     }
 
-    // New system: subtitles live INSIDE the exact same 3600x2400 composite frame
-    // as ceiling and screen. No viewport/canvas coordinate conversion at all.
+    // Put the subtitle layer INSIDE the composite frame and make the layer itself
+    // exactly match the target projection region. No translate / centering math.
     if (this.element.parentElement !== frame) frame.appendChild(this.element);
 
     Object.assign(this.element.style, {
       position: "absolute",
-      transform: "translateX(-50%)",
-      margin: "0"
+      transform: "none",
+      margin: "0",
+      right: "auto",
+      bottom: "auto"
     });
 
     if (this.positionMode === "screen") {
-      // Screen projection is x 23.333..% → 76.666..%, y 50% → 100%.
-      // Put text at its top-centre, safely BELOW the ceiling boundary.
-      this.element.style.left = "50%";
-      this.element.style.top = "53%";
-      this.element.style.width = "48%";
+      // screen = 1920x1200 at x=840, y=1200 in the 3600x2400 master
+      this.element.style.left = "23.333333%";
+      this.element.style.top = "50%";
+      this.element.style.width = "53.333333%";
+      this.element.style.height = "50%";
+      this.element.style.paddingTop = "3.5%";
     } else {
-      // Ceiling is the complete upper half of the same frame.
-      this.element.style.left = "50%";
-      this.element.style.top = "17%";
-      this.element.style.width = "88%";
+      // ceiling = full 3600x1200 upper half
+      this.element.style.left = "0";
+      this.element.style.top = "0";
+      this.element.style.width = "100%";
+      this.element.style.height = "50%";
+      this.element.style.paddingTop = "14%";
     }
   }
-  setPositionMode(mode){this.positionMode=mode==="screen"?"screen":"ceiling";this.applyPositionMode();return this.positionMode}
-  togglePositionMode(){return this.setPositionMode(this.positionMode==="ceiling"?"screen":"ceiling")}
-  getPositionMode(){return this.positionMode}
-  setScene(scene){this.cancelPendingShow();this.cancelTyping();this.scene=scene??null;this.cues=this.normalizeCues(scene);this.currentCueIndex=-1;this.sceneStartedAt=performance.now();this.clear();this.syncPositionGeometry()}
-  normalizeCues(scene){const source=scene?.subtitleCues??scene?.text??scene?.subtitles??[];if(!source)return[];if(typeof source==="string")return source.split(/\n\s*\n/g).map(text=>({text:text.trim(),speaker:"aicha"})).filter(c=>c.text);if(!Array.isArray(source))return[];return source.map(c=>typeof c==="string"?{text:c.trim(),speaker:"aicha"}:{...c,text:String(c?.text??"").trim()}).filter(c=>c.text)}
-  setEnabled(enabled){this.enabled=Boolean(enabled);if(!this.enabled){this.cancelPendingShow();this.cancelTyping();this.clear()}}
-  toggle(){const now=performance.now();if(now-this.lastToggleAt<80)return this.enabled;this.lastToggleAt=now;this.setEnabled(!this.enabled);if(this.enabled)this.currentCueIndex=-1;return this.enabled}
-  update(){this.syncPositionGeometry();if(!this.enabled||!this.scene||!this.cues.length){this.clear();return}const elapsed=(performance.now()-this.sceneStartedAt)/1000;const i=this.getCueIndex(elapsed);if(i===this.currentCueIndex)return;this.currentCueIndex=i;this.cancelPendingShow();this.cancelTyping();if(i<0){this.clear();return}this.show(this.cues[i])}
-  getCueIndex(elapsed){const timed=this.cues.some(c=>Number.isFinite(Number(c.time)));if(timed)return this.cues.findIndex((c,i)=>{const start=Number(c.time??0),next=Number(this.cues[i+1]?.time),end=Number.isFinite(Number(c.end))?Number(c.end):Number.isFinite(next)?next:Number.POSITIVE_INFINITY;return elapsed>=start&&elapsed<end});const sd=Number(this.scene?.duration??0)/1000,total=sd>0?sd:this.cues.length*6.5,d=Math.max(3.2,total/this.cues.length);return Math.min(this.cues.length-1,Math.floor(elapsed/d))}
-  show(cue){const speaker=this.element.querySelector(".subtitle-speaker"),text=this.element.querySelector(".subtitle-text");this.element.classList.remove("is-visible","is-typing");this.pendingShowTimer=window.setTimeout(()=>{this.pendingShowTimer=null;if(!this.enabled)return;this.element.dataset.speaker=cue.speaker??"aicha";speaker.textContent=cue.label??this.formatSpeaker(cue.speaker);this.element.classList.add("is-visible");const full=cue.text??"";if(!this.scene?.subtitleTyping){text.textContent=full;return}text.textContent="";this.element.classList.add("is-typing");const speed=Math.max(8,Number(this.scene?.subtitleTypingSpeed??38));let i=0;this.typingTimer=window.setInterval(()=>{i++;text.textContent=full.slice(0,i);if(i>=full.length){this.cancelTyping();this.element.classList.remove("is-typing")}},speed)},150)}
-  cancelPendingShow(){if(this.pendingShowTimer){window.clearTimeout(this.pendingShowTimer);this.pendingShowTimer=null}}
-  cancelTyping(){if(this.typingTimer){window.clearInterval(this.typingTimer);this.typingTimer=null}this.element?.classList.remove("is-typing")}
-  clear(){this.cancelTyping();this.element?.classList.remove("is-visible")}
-  formatSpeaker(speaker){if(speaker==="voice")return"VOICE";if(speaker==="aicha")return"AICHA";return speaker?String(speaker).toUpperCase():""}
+
+  setPositionMode(mode) {
+    this.positionMode = mode === "screen" ? "screen" : "ceiling";
+    this.applyPositionMode();
+    return this.positionMode;
+  }
+
+  togglePositionMode() {
+    return this.setPositionMode(this.positionMode === "ceiling" ? "screen" : "ceiling");
+  }
+
+  getPositionMode() { return this.positionMode; }
+
+  setScene(scene) {
+    this.cancelPendingShow();
+    this.cancelTyping();
+    this.scene = scene ?? null;
+    this.cues = this.normalizeCues(scene);
+    this.currentCueIndex = -1;
+    this.sceneStartedAt = performance.now();
+    this.clear();
+    this.syncPositionGeometry();
+  }
+
+  normalizeCues(scene) {
+    const source = scene?.subtitleCues ?? scene?.text ?? scene?.subtitles ?? [];
+    if (!source) return [];
+    if (typeof source === "string") {
+      return source.split(/\n\s*\n/g).map((text) => ({ text: text.trim(), speaker: "aicha" })).filter((cue) => cue.text);
+    }
+    if (!Array.isArray(source)) return [];
+    return source.map((cue) => typeof cue === "string" ? { text: cue.trim(), speaker: "aicha" } : { ...cue, text: String(cue?.text ?? "").trim() }).filter((cue) => cue.text);
+  }
+
+  setEnabled(enabled) {
+    this.enabled = Boolean(enabled);
+    if (!this.enabled) { this.cancelPendingShow(); this.cancelTyping(); this.clear(); }
+  }
+
+  toggle() {
+    const now = performance.now();
+    if (now - this.lastToggleAt < 80) return this.enabled;
+    this.lastToggleAt = now;
+    this.setEnabled(!this.enabled);
+    if (this.enabled) this.currentCueIndex = -1;
+    return this.enabled;
+  }
+
+  update() {
+    this.syncPositionGeometry();
+    if (!this.enabled || !this.scene || !this.cues.length) { this.clear(); return; }
+    const elapsedSeconds = (performance.now() - this.sceneStartedAt) / 1000;
+    const cueIndex = this.getCueIndex(elapsedSeconds);
+    if (cueIndex === this.currentCueIndex) return;
+    this.currentCueIndex = cueIndex;
+    this.cancelPendingShow();
+    this.cancelTyping();
+    if (cueIndex < 0) { this.clear(); return; }
+    this.show(this.cues[cueIndex]);
+  }
+
+  getCueIndex(elapsedSeconds) {
+    const hasTimings = this.cues.some((cue) => Number.isFinite(Number(cue.time)));
+    if (hasTimings) {
+      return this.cues.findIndex((cue, index) => {
+        const start = Number(cue.time ?? 0);
+        const nextStart = Number(this.cues[index + 1]?.time);
+        const end = Number.isFinite(Number(cue.end)) ? Number(cue.end) : Number.isFinite(nextStart) ? nextStart : Number.POSITIVE_INFINITY;
+        return elapsedSeconds >= start && elapsedSeconds < end;
+      });
+    }
+    const sceneDurationSeconds = Number(this.scene?.duration ?? 0) / 1000;
+    const totalDuration = sceneDurationSeconds > 0 ? sceneDurationSeconds : this.cues.length * 6.5;
+    const cueDuration = Math.max(3.2, totalDuration / this.cues.length);
+    return Math.min(this.cues.length - 1, Math.floor(elapsedSeconds / cueDuration));
+  }
+
+  show(cue) {
+    const speakerElement = this.element.querySelector(".subtitle-speaker");
+    const textElement = this.element.querySelector(".subtitle-text");
+    this.element.classList.remove("is-visible", "is-typing");
+    this.pendingShowTimer = window.setTimeout(() => {
+      this.pendingShowTimer = null;
+      if (!this.enabled) return;
+      this.element.dataset.speaker = cue.speaker ?? "aicha";
+      speakerElement.textContent = cue.label ?? this.formatSpeaker(cue.speaker);
+      this.element.classList.add("is-visible");
+      const fullText = cue.text ?? "";
+      if (!this.scene?.subtitleTyping) { textElement.textContent = fullText; return; }
+      textElement.textContent = "";
+      this.element.classList.add("is-typing");
+      const speed = Math.max(8, Number(this.scene?.subtitleTypingSpeed ?? 38));
+      let index = 0;
+      this.typingTimer = window.setInterval(() => {
+        index += 1;
+        textElement.textContent = fullText.slice(0, index);
+        if (index >= fullText.length) { this.cancelTyping(); this.element.classList.remove("is-typing"); }
+      }, speed);
+    }, 150);
+  }
+
+  cancelPendingShow() {
+    if (this.pendingShowTimer) { window.clearTimeout(this.pendingShowTimer); this.pendingShowTimer = null; }
+  }
+
+  cancelTyping() {
+    if (this.typingTimer) { window.clearInterval(this.typingTimer); this.typingTimer = null; }
+    this.element?.classList.remove("is-typing");
+  }
+
+  clear() { this.cancelTyping(); this.element?.classList.remove("is-visible"); }
+
+  formatSpeaker(speaker) {
+    if (speaker === "voice") return "VOICE";
+    if (speaker === "aicha") return "AICHA";
+    return speaker ? String(speaker).toUpperCase() : "";
+  }
 }
